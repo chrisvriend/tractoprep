@@ -31,8 +31,7 @@ data.
 
 - `*_space-dwi_desc-preproc_dwi.nii.gz` / `.bval` / `.bvec`
 - `*_space-dwi_label-cnr-maps_desc-preproc_dwi.nii.gz`
-- `*_space-dwi_res-high_atlas-300P17N_dseg.nii.gz` and the
-  `atlas-400P17N` variant
+- `*_space-dwi_res-high_atlas-[300P17N/400P17N/400P17N-Buckner]_dseg.nii.gz`
 - `*_space-dwi_res-high_desc-5tt-hsvs_probseg.nii.gz`
 - `*_space-dwi_res-high_desc-gmwm_probseg.nii.gz`
 
@@ -61,3 +60,5 @@ outputdir/
 - `*_space-dwi_tracto-<nstreamlines_desc-sift_weights.txt`
 - `*_atlas-300P17N_desc-streams_connmatrix.csv`
 - `*_atlas-400P17N_desc-streams_connmatrix.csv`
+- `*_atlas-400P17N-Buckner_desc-streams_connmatrix.csv`
+

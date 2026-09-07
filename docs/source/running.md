@@ -125,7 +125,7 @@ docker run --rm \
   -v /host/path/to/work:/work \
   -v /host/path/to/freesurfer:/freesurfer \
   -v /host/path/to/spec.json:/spec/spec.json \
-  cvriend/tractoprep{{RELEASE_TAG}} \
+  cvriend/tractoprep:{{RELEASE_TAG}} \
   dwi-preproc /spec/spec.json
 ````
 :::
@@ -138,7 +138,7 @@ podman run --rm \
   -v /host/path/to/work:/work \
   -v /host/path/to/freesurfer:/freesurfer \
   -v /host/path/to/spec.json:/spec/spec.json \
-  cvriend/tractoprep{{RELEASE_TAG}} \
+  cvriend/tractoprep:{{RELEASE_TAG}} \
   dwi-preproc /spec/spec.json
 `````
 You can add a `:Z` suffix to relabel bind mounts for
