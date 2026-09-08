@@ -120,6 +120,7 @@ subj=""
 session=""
 scriptdir=""
 nthreads=""
+dns2=1
 
 # input variables
 # Parse command line arguments
@@ -612,10 +613,22 @@ fi
 # MP-PCA denoising & deringing of dwi scan
 #----------------------------------------------------------------------
 if [ ! -f ${workdir}/${subj}${sessionpath}dwi/${subj}${sessionfile}space-dwi_desc-dns+degibbs_dwi.nii.gz ]; then
-    dwidenoise ${bidsdir}/${subj}${sessionpath}dwi/${subj}${sessionfile}dwi.nii.gz \
-        ${workdir}/${subj}${sessionpath}dwi/${subj}${sessionfile}space-dwi_desc-dns_dwi.mif \
-        -noise ${workdir}/${subj}${sessionpath}dwi/${subj}${sessionfile}space-dwi_desc-noise_dwi.nii.gz \
-        -nthreads ${nthreads} -force
+
+    if [ -z dns2 ]; then
+        echo -e "${YELLOW}will use dwidenoise${NC}"
+
+        dwidenoise ${bidsdir}/${subj}${sessionpath}dwi/${subj}${sessionfile}dwi.nii.gz \
+            ${workdir}/${subj}${sessionpath}dwi/${subj}${sessionfile}space-dwi_desc-dns_dwi.mif \
+            -noise ${workdir}/${subj}${sessionpath}dwi/${subj}${sessionfile}space-dwi_desc-noise_dwi.nii.gz \
+            -nthreads ${nthreads} -force
+    else
+            echo -e "${YELLOW}will use dwidenoise2${NC}"
+        mrconvert ${bidsdir}/${subj}${sessionpath}dwi/${subj}${sessionfile}dwi.nii.gz ${workdir}/${subj}${sessionpath}dwi/${subj}${sessionfile}dwi.mif \
+            -fslgrad ${bidsdir}/${subj}${sessionpath}dwi/${subj}${sessionfile}dwi.bvec ${bidsdir}/${subj}${sessionpath}dwi/${subj}${sessionfile}dwi.bval -force
+        dwidenoise2 ${workdir}/${subj}${sessionpath}dwi/${subj}${sessionfile}dwi.mif ${workdir}/${subj}${sessionpath}dwi/${subj}${sessionfile}space-dwi_desc-dns_dwi.mif \
+        -noise_out ${workdir}/${subj}${sessionpath}dwi/${subj}${sessionfile}space-dwi_desc-noise_dwi.nii.gz -force
+
+    fi
 
     # calculate residuals for QC 
     mrcalc ${bidsdir}/${subj}${sessionpath}dwi/${subj}${sessionfile}dwi.nii.gz \
