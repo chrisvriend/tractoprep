@@ -305,8 +305,15 @@ if [[ "$multirun" == true ]]; then
             mrconvert "$nii" "$mif_raw" -fslgrad "$bvec" "$rounded_bval" \
                 -json_import "$json" -force
 
-            dwidenoise "$mif_raw" "$mif_dns" \
-                -noise "$noise_nii" -nthreads ${nthreads} -force
+            if [[ "$dns2" -eq 1 ]]; then
+                log "${BLUE}" "running dwidenoise2 on dir-${label}"
+                dwidenoise2 "$mif_raw" "$mif_dns" \
+                    -noise_out "$noise_nii" -nthreads ${nthreads} -force
+            else
+                log "${BLUE}" "running dwidenoise on dir-${label}"
+                dwidenoise "$mif_raw" "$mif_dns" \
+                    -noise "$noise_nii" -nthreads ${nthreads} -force
+            fi
 
             # calculate residuals for QC 
             mrcalc ${mif_raw} ${mif_dns} \
@@ -614,20 +621,21 @@ fi
 #----------------------------------------------------------------------
 if [ ! -f ${workdir}/${subj}${sessionpath}dwi/${subj}${sessionfile}space-dwi_desc-dns+degibbs_dwi.nii.gz ]; then
 
-    if [ -z dns2 ]; then
-        echo -e "${YELLOW}will use dwidenoise${NC}"
+    if [ ${dns2} -eq 1 ]; then
 
-        dwidenoise ${bidsdir}/${subj}${sessionpath}dwi/${subj}${sessionfile}dwi.nii.gz \
-            ${workdir}/${subj}${sessionpath}dwi/${subj}${sessionfile}space-dwi_desc-dns_dwi.mif \
-            -noise ${workdir}/${subj}${sessionpath}dwi/${subj}${sessionfile}space-dwi_desc-noise_dwi.nii.gz \
-            -nthreads ${nthreads} -force
-    else
-            echo -e "${YELLOW}will use dwidenoise2${NC}"
+
+        echo -e "${YELLOW}will use dwidenoise2${NC}"
         mrconvert ${bidsdir}/${subj}${sessionpath}dwi/${subj}${sessionfile}dwi.nii.gz ${workdir}/${subj}${sessionpath}dwi/${subj}${sessionfile}dwi.mif \
             -fslgrad ${bidsdir}/${subj}${sessionpath}dwi/${subj}${sessionfile}dwi.bvec ${bidsdir}/${subj}${sessionpath}dwi/${subj}${sessionfile}dwi.bval -force
         dwidenoise2 ${workdir}/${subj}${sessionpath}dwi/${subj}${sessionfile}dwi.mif ${workdir}/${subj}${sessionpath}dwi/${subj}${sessionfile}space-dwi_desc-dns_dwi.mif \
         -noise_out ${workdir}/${subj}${sessionpath}dwi/${subj}${sessionfile}space-dwi_desc-noise_dwi.nii.gz -force
-
+    
+    else
+        echo -e "${YELLOW}will use dwidenoise${NC}"
+        dwidenoise ${bidsdir}/${subj}${sessionpath}dwi/${subj}${sessionfile}dwi.nii.gz \
+            ${workdir}/${subj}${sessionpath}dwi/${subj}${sessionfile}space-dwi_desc-dns_dwi.mif \
+            -noise ${workdir}/${subj}${sessionpath}dwi/${subj}${sessionfile}space-dwi_desc-noise_dwi.nii.gz \
+            -nthreads ${nthreads} -force
     fi
 
     # calculate residuals for QC 
