@@ -620,7 +620,7 @@ if [ ! -f ${workdir}/${subj}${sessionpath}dwi/${subj}${sessionfile}space-dwi_des
     # calculate residuals for QC 
     mrcalc ${bidsdir}/${subj}${sessionpath}dwi/${subj}${sessionfile}dwi.nii.gz \
         ${workdir}/${subj}${sessionpath}dwi/${subj}${sessionfile}space-dwi_desc-dns_dwi.mif \
-        -subtract ${workdir}/${subj}${sessionpath}dwi/${subj}${sessionfile}space-dwi_desc-residuals_dwi.mif -force    
+        -subtract ${workdir}/${subj}${sessionpath}dwi/${subj}${sessionfile}space-dwi_desc-residuals_dwi.nii.gz -force    
 
     #Remove Gibbs Ringing Artifacts
     mrdegibbs ${workdir}/${subj}${sessionpath}dwi/${subj}${sessionfile}space-dwi_desc-dns_dwi.mif \
