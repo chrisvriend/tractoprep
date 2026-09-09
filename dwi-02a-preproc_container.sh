@@ -121,7 +121,7 @@ session=""
 scriptdir=""
 nthreads=""
 
-dns2=${dns2:-1} # default is to run dwidenoise2, set to 0 to run dwidenoise (legacy)
+dns2=${dns2:-0} # default is to run dwidenoise, set to 1 to run dwidenoise2 
 
 
 # input variables
@@ -625,10 +625,10 @@ if [ ! -f ${workdir}/${subj}${sessionpath}dwi/${subj}${sessionfile}space-dwi_des
 
     if [ ${dns2} -eq 1 ]; then
 
-
         echo -e "${YELLOW}will use dwidenoise2${NC}"
         mrconvert ${bidsdir}/${subj}${sessionpath}dwi/${subj}${sessionfile}dwi.nii.gz ${workdir}/${subj}${sessionpath}dwi/${subj}${sessionfile}dwi.mif \
             -fslgrad ${bidsdir}/${subj}${sessionpath}dwi/${subj}${sessionfile}dwi.bvec ${bidsdir}/${subj}${sessionpath}dwi/${subj}${sessionfile}dwi.bval -force
+
         dwidenoise2 ${workdir}/${subj}${sessionpath}dwi/${subj}${sessionfile}dwi.mif ${workdir}/${subj}${sessionpath}dwi/${subj}${sessionfile}space-dwi_desc-dns_dwi.mif \
         -noise_out ${workdir}/${subj}${sessionpath}dwi/${subj}${sessionfile}space-dwi_desc-noise_dwi.nii.gz -force
     
@@ -650,7 +650,7 @@ if [ ! -f ${workdir}/${subj}${sessionpath}dwi/${subj}${sessionfile}space-dwi_des
         ${workdir}/${subj}${sessionpath}dwi/${subj}${sessionfile}space-dwi_desc-dns+degibbs_dwi.nii.gz \
         -nthreads ${nthreads} -force
 
-    rm ${workdir}/${subj}${sessionpath}dwi/${subj}${sessionfile}space-dwi_desc-dns_dwi.mif
+    #rm ${workdir}/${subj}${sessionpath}dwi/${subj}${sessionfile}space-dwi_desc-dns_dwi.mif
 fi
 
 # write dwi acqparams
