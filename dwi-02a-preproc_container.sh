@@ -120,7 +120,9 @@ subj=""
 session=""
 scriptdir=""
 nthreads=""
-dns2=1
+
+dns=${dns:-1} # default is to run dwidenoise2, set to 0 to run dwidenoise (legacy)
+
 
 # input variables
 # Parse command line arguments
