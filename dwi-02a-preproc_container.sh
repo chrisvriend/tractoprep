@@ -121,7 +121,7 @@ session=""
 scriptdir=""
 nthreads=""
 
-dns=${dns:-1} # default is to run dwidenoise2, set to 0 to run dwidenoise (legacy)
+dns2=${dns2:-1} # default is to run dwidenoise2, set to 0 to run dwidenoise (legacy)
 
 
 # input variables
