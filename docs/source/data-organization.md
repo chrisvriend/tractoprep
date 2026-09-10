@@ -42,7 +42,7 @@ bidsdir/
 
 ```
 
-```note
+```{note}
 dir-PE (PhaseEncoding direction) should not be specified in the filename in case the diffusion MRI was acquired in only one PE direction. In case of multiple runs (with for example directions AP and PA) save as sub-01[_<ses-Tx>]_<dir-AP_dwi.nii[.gz] and sub-01[_<ses-Tx>]_<dir-PA_dwi.nii[.gz] with accompanying bvals, bvecs and json files.
 ```
 
