@@ -949,7 +949,7 @@ elif [ ${#fmap_samePE[@]} -eq 0 ] && [ ${#fmap_otherPE[@]} -eq 0 ]; then
             "${workdir}/${subj}${sessionpath}fmap/synb0/input" \
             "${workdir}/${subj}${sessionpath}fmap/synb0/output"
 
-        cp ${workdir}/${subj}${sessionpath}fmap/${subj}${sessionfile}dir-${dwidir}${otherdir}_desc-refparams.tsv \
+        rsync -rltpD ${workdir}/${subj}${sessionpath}fmap/${subj}${sessionfile}dir-${dwidir}${otherdir}_desc-refparams.tsv \
             ${workdir}/${subj}${sessionpath}fmap/synb0/input/
 
         # extract first b0 vol from dwi
@@ -986,14 +986,9 @@ elif [ ${#fmap_samePE[@]} -eq 0 ] && [ ${#fmap_otherPE[@]} -eq 0 ]; then
         #Run Synb0-DISCO for fieldmap-free distortion correction
         if [[ ! -f ${workdir}/${subj}${sessionpath}fmap/synb0/output/b0_d_smooth.nii.gz ]] ||
             [[ ! -f ${workdir}/${subj}${sessionpath}fmap/synb0/output/b0_u.nii.gz ]]; then
-            # all synb0 runs are now lowmem by default, so no need to check for the lowmem flag
-            # if [[ "${lowmem}" -eq 1 ]]; then
-            #     synb0 --input ${workdir}/${subj}${sessionpath}fmap/synb0/input \
-            #         --output ${workdir}/${subj}${sessionpath}fmap/synb0/output --notopup --lowmem
-            # else
+          
                 synb0 --input ${workdir}/${subj}${sessionpath}fmap/synb0/input \
                     --output ${workdir}/${subj}${sessionpath}fmap/synb0/output --notopup
-            # fi
         fi
 
         fslmerge -t ${workdir}/${subj}${sessionpath}fmap/synb0/output/b0_all.nii.gz \

@@ -441,12 +441,17 @@ fi
 #                           Existing FreeSurfer run
 #----------------------------------------------------------------------
 
+# template not created? 
+
+
 if [[ -d "${freesurferdir}/${subj}" && ! -f "${freesurferdir}/${subj}/scripts/T1w-2-dwi.done" ]]; then
     log "$YELLOW" "Relying on existing FreeSurfer run and assuming T1w to DWI registration has not been done"
     echo
     mkdir -p "${workdir}/${subj}/freesurfer/"
     mkdir -p ${workdir}/${subj}/anat/ 
     mkdir -p ${outputdir}/dwi-preproc/${subj}/anat
+    mkdir -p "${workanat}"
+    mkdir -p "${outanat}"
     rsync -rltpDv "${freesurferdir}/${subj}" "${workdir}/${subj}/freesurfer/"
     cd "${workdir}/${subj}${sessionpath}"
 
@@ -528,7 +533,7 @@ if [[ -d "${freesurferdir}/${subj}" && ! -f "${freesurferdir}/${subj}/scripts/T1
     if [[ -d "${outxfms}" ]]; then
         rsync -rltpD "${outxfms}" "${workdir}/${subj}${sessionpath}"
     fi
-    mkdir -p "${workxfms}"
+    mkdir -p "${workxfms}" 
     cd "${workdwi}"
 
     log "$BLUE" "Register T1w to dwi space"
