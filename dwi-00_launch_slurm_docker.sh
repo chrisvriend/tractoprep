@@ -102,6 +102,9 @@ for key in $(jq -r 'keys[]' "${templatejson}"); do
   declare "$key"="$value"
 done
 
+if [ ! -d ${host_freesurferdir} ]; then
+    mkdir -p ${host_freesurferdir}
+fi
 # get rid of subj variable from spec.json, since we will override it with the SLURM_ARRAY_TASK_ID
 unset subj
 
