@@ -13,6 +13,13 @@
 - (Optional) A **FreeSurfer output directory** (`freesurferdir`) if you
   already have FreeSurfer output available for these participants.
 
+
+```{note}
+while existing FreeSurfer output for a subject is optional. the freesurferdir should be indicated 
+in the {doc}`spec.json` file. 
+
+```
+
 The files can be organized with or without a session label, as long as
 the organization is BIDS-compliant. Either of these is correct:
 

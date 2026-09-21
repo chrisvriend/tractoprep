@@ -91,10 +91,20 @@ report. This lets users quickly spot discrepancies in imaging
 parameters between participants in a sample, and is used to write up
 the methods for the ENIGMA OCD paper.
 
+**Outputs:**
+`dwi-params/parameters_report.html`
+`dwi-params/<subj>[_<session>]_parameters.json`
+
+
+
 ## dwi-send
 
 Copies the completed derivatives and makes them ready to send to the
 project lead, along with the clinical covariates file.
+
+**Outputs:**
+`dwi-send/TBA`
+
 
 ```{tip}
 Run these **in dependency order** for a fresh subject:

@@ -45,9 +45,9 @@ for var in bidsdir outputdir ; do
   fi
 done  
 
-SUMMARY_FILE="${outputdir}/params/parameter_value_frequencies.json"
-REPORT_FILE="${outputdir}/params/parameter_report.html"
-mkdir -p "${outputdir}/params"
+SUMMARY_FILE="${outputdir}/dwi-params/parameter_value_frequencies.json"
+REPORT_FILE="${outputdir}/dwi-params/parameter_report.html"
+mkdir -p "${outputdir}/dwi-params"
 
 ########################################
 # PARAMETER LISTS
@@ -244,7 +244,7 @@ log_bvals() {
       b = int((v + w/2) / w) * w
       printf "dwi\tbvalue\t%d\n", b
     }
-  ' >> "${outputdir}/params/.param_values_tmp.tsv"
+  ' >> "${outputdir}/dwi-params/.param_values_tmp.tsv"
 }
 
 escape_json_string() {
@@ -260,7 +260,7 @@ log_param_value() {
   local value="$3"
 
   value="${value//$'\n'/ }"
-  echo -e "${modality}\t${param}\t${value}" >> "${outputdir}/params/.param_values_tmp.tsv"
+  echo -e "${modality}\t${param}\t${value}" >> "${outputdir}/dwi-params/.param_values_tmp.tsv"
 }
 
 # Build a JSON array of per-run parameter objects for one modality.
@@ -323,7 +323,7 @@ build_modality_array() {
 # MAIN LOOP: iterate subjects & sessions
 ########################################
 
-> "${outputdir}/params/.param_values_tmp.tsv"
+> "${outputdir}/dwi-params/.param_values_tmp.tsv"
 
 find "$bidsdir" -maxdepth 1 -type d -name "sub-*" | sort | while read -r SUBDIR; do
   SUBID=$(basename "$SUBDIR")
@@ -397,9 +397,9 @@ find "$bidsdir" -maxdepth 1 -type d -name "sub-*" | sort | while read -r SUBDIR;
     OUTPUT_JSON+="}"
 
     if [[ -n "$SESSION_LABEL" ]]; then
-      OUTFILE="${outputdir}/params/${SUBID}_${SESSION_LABEL}_parameters.json"
+      OUTFILE="${outputdir}/dwi-params/${SUBID}_${SESSION_LABEL}_parameters.json"
     else
-      OUTFILE="${outputdir}/params/${SUBID}_parameters.json"
+      OUTFILE="${outputdir}/dwi-params/${SUBID}_parameters.json"
     fi
 
     echo "$OUTPUT_JSON" | jq '.' > "$OUTFILE"
@@ -412,7 +412,7 @@ done
 # BUILD FREQUENCY SUMMARY WITH jq
 ########################################
 
-if [[ ! -s "${outputdir}/params/.param_values_tmp.tsv" ]]; then
+if [[ ! -s "${outputdir}/dwi-params/.param_values_tmp.tsv" ]]; then
   log "$RED" "No parameter values were logged; frequency summary will be empty."
   echo '{}' > "$SUMMARY_FILE"
 else
@@ -420,7 +420,7 @@ else
   # nested objects, and jq treats `null + 1` as `1`, so a plain reduce with +=
   # does everything the earlier has()-check version was trying to do, without
   # the "Invalid path expression" error that comes from assigning into a variable.
-  awk -F '\t' 'NF==3 {print}' "${outputdir}/params/.param_values_tmp.tsv" \
+  awk -F '\t' 'NF==3 {print}' "${outputdir}/dwi-params/.param_values_tmp.tsv" \
     | jq -Rn '
       reduce ( inputs | split("\t") | {modality: .[0], param: .[1], value: .[2]} ) as $row (
         {};

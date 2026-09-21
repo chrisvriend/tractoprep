@@ -2,7 +2,7 @@
 
 cat << 'EOF' > spec_template.json
 {
-  "Software_version": "1.0.0",
+  "Software_version": "1.0.6",
   "subj": "",
   "session": "",
   "eddy_method": "default",
@@ -10,7 +10,8 @@ cat << 'EOF' > spec_template.json
   "bidsdir": "<path/to/bidsfolder>",
   "outputdir": "<path/to/outputderivativesfolder>",
   "workdir": "<path/to/scratchworkdirectory>",
-  "freesurferdir": "<path/to/existing/freesurferoutputdirectory",
-  "nthreads": 8
+  "freesurferdir": "<path/to/freesurferoutputdirectory>",
+  "nthreads": 8,
+  "sitename": "name_of_sample&site"
 }
 EOF
