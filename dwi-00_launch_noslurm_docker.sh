@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ============================================================
-# DWI Pipeline Runner with docker (No-SLURM version)
+# DWI Pipeline Runner with Docker (No-SLURM version)
 #
 # Processes all subjects found in a BIDS directory. The user MUST
 # specify which pipeline stage to run:
@@ -17,6 +17,15 @@
 # Subjects can be processed in series (default) or in parallel
 # using bash background jobs with a concurrency limit.
 #
+# Ctrl+C handling: background jobs have SIGINT ignored by bash
+# when job control is off (the normal case for a script), and that
+# ignore-disposition is inherited down through `bash -c` into the
+# docker client and container. So instead of relying on signals to
+# propagate, every container launched by this script is tagged with
+# a unique name and a run-specific label. On INT/TERM we explicitly
+# `docker kill` every tagged container, stop scheduling new
+# subjects, and wait for the now-doomed background jobs to unwind.
+#
 # ============================================================
 
 set -uo pipefail
@@ -26,7 +35,7 @@ set -uo pipefail
 ########################
 
 MAX_PARALLEL=1
-CONTAINERPATH="docker.io/cvriend/tractoprep:latest"
+CONTAINERPATH="docker.io/cvriend/tractoprep:v1.0.6"
 NICE_LEVEL=10
 DRY_RUN=0
 SINGLE_SUBJECT=""
@@ -53,7 +62,7 @@ Usage() {
 Usage: $0 <stage> [OPTIONS] <path_to_spec.json>
 
 Run tractoprep pipelines for all subjects in a BIDS directory.
-Works with docker — subjects can be processed in series or
+Works with Docker — subjects can be processed in series or
 in parallel.
 
 Required argument:
@@ -68,10 +77,10 @@ Options:
   --serial           Run subjects one at a time (same as --parallel 1)
   --container REF    Docker image to run. Accepts a registry reference
                      (e.g. docker.io/cvriend/tractoprep:latest), a local
-                     image name, or a path to a Docker/OCI image archive
-                     (.tar). Archives are loaded with 'docker load';
-                     registry references are pulled automatically if not
-                     present locally.
+                     image name, or a path to a tar archive created with
+                     'docker save' (an 'oci-archive:' prefix, as used by
+                     podman, is also accepted). Pulled/loaded
+                     automatically if not present locally.
                      (default: ${CONTAINERPATH})
   --subject SUB      Process only this subject (e.g., sub-01)
   --nice N           Set nice level 0-19 (default: ${NICE_LEVEL})
@@ -106,18 +115,17 @@ Examples:
 
 Requirements:
   - bash 4.3+ (for parallel mode; serial mode works with older bash)
-  - docker installed and in PATH, with a reachable docker daemon
-    (rootless docker works fine; with the system daemon, non-root
-    users must be in the 'docker' group)
+  - docker installed and in PATH (rootless Docker works fine; your
+    user must be able to talk to the Docker daemon, e.g. be in the
+    'docker' group)
   - jq installed
   - GNU find (for -printf; standard on Linux)
 
-Notes:
-  - When run by a non-root user, containers are started with
-    --user <uid>:<gid> so outputs are owned by the calling user
-    (mimics apptainer / podman --userns=keep-id behaviour).
-  - On SELinux-enforcing docker hosts, bind mounts may require ':z'
-    to be appended to the -v flags in run_preproc/run_tracto/run_qc.
+Ctrl+C:
+  Pressing Ctrl+C at any time stops scheduling new subjects and
+  kills every Docker container this run started (tracked via a
+  unique --label), then exits. Press it twice to skip the graceful
+  wait and exit immediately.
 EOF
   exit 1
 }
@@ -194,18 +202,23 @@ run_preproc() {
     # Docker flags:
     #   --rm                      remove container after run
     #   ${USER_FLAG}              run as calling user (apptainer-like)
+    #   ${SECOPT}                 allow bind mounts on SELinux hosts
     #   --ipc=host                shared /dev/shm (apptainer-like)
-    #   -e HOME=/scratch          writable HOME for the container user
-    #                             (needed with --user on docker)
-    #   NOTE: on SELinux-enforcing docker hosts, append ':z' to the
-    #         -v bind mounts below if you get "Permission denied".
-    local cmd="tmpdir_job=\"${workdir}/tmp/${subj}${sessionfile}\${BASHPID}\"; \
+    #   --name / --label          so Ctrl+C can find and kill this
+    #                             container even though it's running
+    #                             inside a backgrounded subshell
+
+    local cname="tractoprep_${subj}_preproc_${BASHPID}_${RANDOM}"
+    echo "$cname" >> "$CONTAINERS_FILE"
+
+   local cmd="tmpdir_job=\"${workdir}/tmp/${subj}${sessionfile}\${BASHPID}\"; \
 mkdir -p \"\${tmpdir_job}\"; \
-trap 'rm -rf \"\${tmpdir_job}\"' EXIT; \
+trap 'rm -rf \"\${tmpdir_job}\" 2>/dev/null' EXIT; \
 ${RUNTIME} run --rm ${USER_FLAG} \
-  --ipc=host \
+  --name ${cname} --label ${LABEL_KEY}=${LABEL_VALUE} \
+  ${SECOPT} --ipc=host \
   -v ${bidsdir}:${bidsdir} -v ${workdir}:${workdir} -v ${outputdir}:${outputdir} -v \${tmpdir_job}:/scratch \
-  -e TMPDIR=/scratch -e TMP=/scratch -e TEMP=/scratch -e HOME=/scratch \
+  -e TMPDIR=/scratch -e TMP=/scratch -e TEMP=/scratch \
   -e OMP_NUM_THREADS=${PREPROC_CPUS} -e ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=${PREPROC_CPUS} \
   ${CONTAINERPATH} dwi-preproc ${subjspecjson}"
 
@@ -244,14 +257,17 @@ run_tracto() {
         return 0
     fi
 
-    # Docker flags: see run_preproc
+    local cname="tractoprep_${subj}_tracto_${BASHPID}_${RANDOM}"
+    echo "$cname" >> "$CONTAINERS_FILE"
+
     local cmd="tmpdir_job=\"${workdir}/tmp/${subj}${sessionfile}\${BASHPID}\"; \
 mkdir -p \"\${tmpdir_job}\"; \
-trap 'rm -rf \"\${tmpdir_job}\"' EXIT; \
+trap 'rm -rf \"\${tmpdir_job}\" 2>/dev/null' EXIT; \
 ${RUNTIME} run --rm ${USER_FLAG} \
-  --ipc=host \
+  --name ${cname} --label ${LABEL_KEY}=${LABEL_VALUE} \
+  ${SECOPT} --ipc=host \
   -v ${bidsdir}:${bidsdir} -v ${workdir}:${workdir} -v ${outputdir}:${outputdir} -v \${tmpdir_job}:/scratch \
-  -e TMPDIR=/scratch -e TMP=/scratch -e TEMP=/scratch -e HOME=/scratch \
+  -e TMPDIR=/scratch -e TMP=/scratch -e TEMP=/scratch \
   -e OMP_NUM_THREADS=${TRACTO_CPUS} -e ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=${TRACTO_CPUS} \
   ${CONTAINERPATH} dwi-tracto ${subjspecjson}"
 
@@ -281,11 +297,13 @@ run_qc() {
 
     local logfile="${logdir}/dwi-qc.log"
 
-    # Docker flags: see run_preproc (no /scratch mount here, so HOME=/tmp)
+    local cname="tractoprep_${subj}_qc_${BASHPID}_${RANDOM}"
+    echo "$cname" >> "$CONTAINERS_FILE"
+
     local cmd="${RUNTIME} run --rm ${USER_FLAG} \
-  --ipc=host \
+  --name ${cname} --label ${LABEL_KEY}=${LABEL_VALUE} \
+  ${SECOPT} --ipc=host \
   -v ${bidsdir}:${bidsdir} -v ${workdir}:${workdir} -v ${outputdir}:${outputdir} \
-  -e HOME=/tmp \
   -e OMP_NUM_THREADS=${QC_CPUS} -e ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=${QC_CPUS} \
   ${CONTAINERPATH} dwi-qc ${subjspecjson}"
 
@@ -319,6 +337,7 @@ process_subject() {
             ;;
         all)
             run_preproc "$subj" || return 1
+            run_qc     "$subj" || return 1
             run_tracto "$subj" || return 1
             run_qc     "$subj" || return 1
             ;;
@@ -445,19 +464,8 @@ if command -v docker &>/dev/null; then
   RUNTIME="docker"
 else
   echo "Error: docker not found in PATH."
-  echo "       Install docker or load the appropriate environment module."
+  echo "       Install Docker or load the appropriate environment module."
   exit 1
-fi
-
-# Docker is client-server: make sure the daemon is reachable
-# (skipped for dry runs so they work without a running daemon).
-if [[ "$DRY_RUN" -ne 1 ]]; then
-  if ! ${RUNTIME} info &>/dev/null; then
-    echo "Error: cannot reach the docker daemon."
-    echo "       Is the docker service running, and do you have permission"
-    echo "       to use it (e.g. membership of the 'docker' group)?"
-    exit 1
-  fi
 fi
 
 if ! command -v jq &>/dev/null; then
@@ -471,41 +479,55 @@ if [[ -z "$CONTAINERPATH" ]]; then
   exit 1
 fi
 
+# Verify the Docker daemon is reachable (e.g. the user is in the
+# 'docker' group, rootless Docker is running, or we are root).
+# Skipped in dry-run mode so commands can be previewed without a
+# working daemon.
+if [[ "$DRY_RUN" -eq 0 ]]; then
+  if ! ${RUNTIME} info &>/dev/null; then
+    echo "Error: cannot connect to the Docker daemon."
+    echo "       Is the Docker service running and do you have permission"
+    echo "       to use it (e.g. is your user in the 'docker' group)?"
+    exit 1
+  fi
+fi
+
+# Accept 'oci-archive:' prefixed references (podman-style) for
+# convenience and strip the prefix so the path can be handled below.
+if [[ "$CONTAINERPATH" == oci-archive:* ]]; then
+  CONTAINERPATH="${CONTAINERPATH#oci-archive:}"
+fi
+
 # Resolve the container image:
-#   - a file on disk is treated as a Docker/OCI image archive (.tar);
-#     docker cannot run directly from an archive (unlike podman's
-#     oci-archive: transport), so it is loaded into the local image
-#     store with 'docker load' and the resulting reference is used.
-#     Prefer archives created with 'docker save'; OCI archives require
-#     a recent Docker with the containerd image store.
+#   - a file on disk is treated as an image archive (.tar, e.g.
+#     created with 'docker save') and is loaded into the local
+#     Docker image store
 #   - anything else is treated as an image reference and is pulled
 #     automatically if it is not present locally
 if [[ -f "$CONTAINERPATH" ]]; then
   if [[ "$CONTAINERPATH" == *.sif ]]; then
     echo "Error: '$CONTAINERPATH' is an apptainer/singularity image (.sif)."
-    echo "       Docker can only run OCI/Docker images. Pull the OCI/Docker"
+    echo "       Docker can only run OCI/Docker images. Pull the Docker"
     echo "       version of the container (e.g. docker pull user/image:tag)"
-    echo "       or convert the image to a Docker/OCI archive first."
+    echo "       or convert the image to a tar archive first."
     exit 1
   fi
   if [[ "$DRY_RUN" -eq 1 ]]; then
     echo "Note: '${CONTAINERPATH}' is an image archive (dry run — not loading)."
-    echo "      At runtime it would be loaded with 'docker load -i'."
   else
-    echo "Loading image archive '${CONTAINERPATH}'..."
-    load_output="$(${RUNTIME} load -i "${CONTAINERPATH}" 2>/dev/null)"
-    loaded_image="$(echo "${load_output}" | sed -n 's/^Loaded image: //p' | head -n 1)"
-    if [[ -z "${loaded_image}" ]]; then
-      # Archive contained an untagged image
-      loaded_image="$(echo "${load_output}" | sed -n 's/^Loaded image ID: //p' | head -n 1)"
-    fi
-    if [[ -z "${loaded_image}" ]]; then
-      echo "Error: failed to load image from '${CONTAINERPATH}'."
+    echo "Loading image archive '${CONTAINERPATH}' into Docker..."
+    load_output=$(${RUNTIME} load -i "${CONTAINERPATH}" 2>&1)
+    # 'docker load' reports either 'Loaded image: repo:tag' or, for
+    # untagged archives, 'Loaded image ID: sha256:...'
+    loaded=$(grep -E '^Loaded image' <<< "$load_output" | tail -n 1 | sed 's/^Loaded image[^:]*: //')
+    if [[ -z "$loaded" ]]; then
+      echo "Error: failed to load image archive '${CONTAINERPATH}'."
+      echo "$load_output"
       exit 1
     fi
-    CONTAINERPATH="${loaded_image}"
+    CONTAINERPATH="$loaded"
   fi
-elif ${RUNTIME} image inspect "${CONTAINERPATH}" >/dev/null 2>&1; then
+elif ${RUNTIME} image inspect "${CONTAINERPATH}" &>/dev/null; then
   : # image already available locally
 elif [[ "$DRY_RUN" -eq 1 ]]; then
   echo "Note: image '${CONTAINERPATH}' not found locally (dry run — not pulling)."
@@ -518,17 +540,68 @@ else
 fi
 
 # Run containers as the calling user (mimics apptainer behaviour).
-# Podman's --userns=keep-id has no docker equivalent; instead the
-# container is started with the caller's uid/gid via --user. When the
-# script runs as root, no flag is needed (containers run as root by
-# default and file ownership is already correct).
-USER_FLAG=""
-if [[ "$(id -u)" -ne 0 ]]; then
-  USER_FLAG="--user $(id -u):$(id -g)"
+# Docker has no --userns=keep-id; --user <uid>:<gid> achieves the
+# same result for bind mounts: files created inside the container
+# are owned by the calling user on the host. When the script itself
+# runs as root, the identity mapping is already correct without it.
+USER_FLAG="--user $(id -u):$(id -g)"
+if [[ "$(id -u)" -eq 0 ]]; then
+  USER_FLAG=""
+fi
+
+# SELinux handling: on SELinux-enabled hosts Docker applies MCS
+# labels that can block access to bind-mounted paths. Disabling the
+# label (the equivalent of podman's --security-opt label=disable)
+# avoids this. The flag is only added when SELinux is actually
+# active, since it is unnecessary (and rejected by some Docker
+# versions) on non-SELinux systems.
+SECOPT=""
+if [[ -d /sys/fs/selinux ]] || { command -v getenforce &>/dev/null && [[ "$(getenforce 2>/dev/null)" != "Disabled" ]]; }; then
+  SECOPT="--security-opt label=disable"
 fi
 
 # Convert to absolute path
 templatejson="$(cd "$(dirname "$templatejson")" && pwd)/$(basename "$templatejson")"
+
+CONTAINERS_FILE=$(mktemp)
+LABEL_KEY="tractoprep_run_id"
+LABEL_VALUE="pid${BASHPID}_$(date +%s)"
+INTERRUPTED=0
+
+cleanup_and_exit() {
+    if [[ "$INTERRUPTED" -eq 1 ]]; then
+        echo -e "\n${RED}Second interrupt received — exiting immediately without waiting.${NC}"
+        exit 130
+    fi
+    INTERRUPTED=1
+    echo -e "\n${YELLOW}Interrupt received — stopping all running containers for this run...${NC}"
+    echo -e "${YELLOW}(press Ctrl+C again to skip the wait and exit immediately)${NC}"
+
+    # Primary: kill every container tagged with this run's label.
+    # This is the reliable path — it doesn't depend on any signal
+    # reaching the background subshells at all.
+    local ids
+    ids=$(${RUNTIME} ps -q --filter "label=${LABEL_KEY}=${LABEL_VALUE}" 2>/dev/null)
+    if [[ -n "$ids" ]]; then
+        # shellcheck disable=SC2086
+        ${RUNTIME} kill $ids 2>/dev/null
+    fi
+
+    # Fallback: kill by tracked name too, in case the label filter
+    # raced with a container that was still starting up.
+    if [[ -f "$CONTAINERS_FILE" ]]; then
+        while IFS= read -r cname; do
+            [[ -n "$cname" ]] && ${RUNTIME} kill "$cname" 2>/dev/null
+        done < "$CONTAINERS_FILE"
+    fi
+
+    echo -e "${YELLOW}Waiting for pipeline processes to exit...${NC}"
+    wait 2>/dev/null
+
+    echo -e "${RED}Aborted by user.${NC}"
+    exit 130
+}
+trap cleanup_and_exit INT TERM
 
 ########################
 # READ SPEC.JSON
@@ -597,12 +670,15 @@ echo ""
 ########################
 
 STATUS_DIR=$(mktemp -d)
-trap 'rm -rf "$STATUS_DIR"' EXIT
+trap 'rm -rf "$STATUS_DIR" "$CONTAINERS_FILE"' EXIT
 
 if [[ "$MAX_PARALLEL" -eq 1 ]]; then
     # ===== SERIAL MODE =====
     failed_subjects=()
     for subj in "${subjects[@]}"; do
+        if [[ "$INTERRUPTED" -eq 1 ]]; then
+            break
+        fi
         if process_subject "$subj" "$STAGE"; then
             echo -e "${GREEN}✓ ${subj} completed successfully.${NC}"
         else
@@ -619,6 +695,9 @@ else
 
     running=0
     for subj in "${subjects[@]}"; do
+        if [[ "$INTERRUPTED" -eq 1 ]]; then
+            break
+        fi
         (
             if process_subject "$subj" "$STAGE"; then
                 touch "$STATUS_DIR/success_${subj}"
