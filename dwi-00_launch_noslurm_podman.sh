@@ -17,6 +17,15 @@
 # Subjects can be processed in series (default) or in parallel
 # using bash background jobs with a concurrency limit.
 #
+# Ctrl+C handling: background jobs have SIGINT ignored by bash
+# when job control is off (the normal case for a script), and that
+# ignore-disposition is inherited down through `bash -c` into the
+# podman client and container. So instead of relying on signals to
+# propagate, every container launched by this script is tagged with
+# a unique name and a run-specific label. On INT/TERM we explicitly
+# `podman kill` every tagged container, stop scheduling new
+# subjects, and wait for the now-doomed background jobs to unwind.
+#
 # ============================================================
 
 set -uo pipefail
@@ -26,7 +35,7 @@ set -uo pipefail
 ########################
 
 MAX_PARALLEL=1
-CONTAINERPATH="docker.io/cvriend/tractoprep:latest"
+CONTAINERPATH="docker.io/cvriend/tractoprep:v1.0.6"
 NICE_LEVEL=10
 DRY_RUN=0
 SINGLE_SUBJECT=""
@@ -107,6 +116,12 @@ Requirements:
   - podman installed and in PATH (rootless podman works fine)
   - jq installed
   - GNU find (for -printf; standard on Linux)
+
+Ctrl+C:
+  Pressing Ctrl+C at any time stops scheduling new subjects and
+  kills every podman container this run started (tracked via a
+  unique --label), then exits. Press it twice to skip the graceful
+  wait and exit immediately.
 EOF
   exit 1
 }
@@ -185,10 +200,18 @@ run_preproc() {
     #   ${USERNS_FLAG}            run as calling user (apptainer-like)
     #   --security-opt label=... allow bind mounts on SELinux hosts
     #   --ipc=host                shared /dev/shm (apptainer-like)
-    local cmd="tmpdir_job=\"${workdir}/tmp/${subj}${sessionfile}\${BASHPID}\"; \
+    #   --name / --label          so Ctrl+C can find and kill this
+    #                             container even though it's running
+    #                             inside a backgrounded subshell
+
+    local cname="tractoprep_${subj}_preproc_${BASHPID}_${RANDOM}"
+    echo "$cname" >> "$CONTAINERS_FILE"
+
+   local cmd="tmpdir_job=\"${workdir}/tmp/${subj}${sessionfile}\${BASHPID}\"; \
 mkdir -p \"\${tmpdir_job}\"; \
-trap 'rm -rf \"\${tmpdir_job}\"' EXIT; \
+trap 'rm -rf \"\${tmpdir_job}\" 2>/dev/null || ${RUNTIME} unshare rm -rf \"\${tmpdir_job}\"' EXIT; \
 ${RUNTIME} run --rm ${USERNS_FLAG} \
+  --name ${cname} --label ${LABEL_KEY}=${LABEL_VALUE} \
   --security-opt label=disable --ipc=host \
   -v ${bidsdir}:${bidsdir} -v ${workdir}:${workdir} -v ${outputdir}:${outputdir} -v \${tmpdir_job}:/scratch \
   -e TMPDIR=/scratch -e TMP=/scratch -e TEMP=/scratch \
@@ -230,10 +253,14 @@ run_tracto() {
         return 0
     fi
 
+    local cname="tractoprep_${subj}_tracto_${BASHPID}_${RANDOM}"
+    echo "$cname" >> "$CONTAINERS_FILE"
+
     local cmd="tmpdir_job=\"${workdir}/tmp/${subj}${sessionfile}\${BASHPID}\"; \
 mkdir -p \"\${tmpdir_job}\"; \
-trap 'rm -rf \"\${tmpdir_job}\"' EXIT; \
+trap 'rm -rf \"\${tmpdir_job}\" 2>/dev/null || ${RUNTIME} unshare rm -rf \"\${tmpdir_job}\"' EXIT; \
 ${RUNTIME} run --rm ${USERNS_FLAG} \
+  --name ${cname} --label ${LABEL_KEY}=${LABEL_VALUE} \
   --security-opt label=disable --ipc=host \
   -v ${bidsdir}:${bidsdir} -v ${workdir}:${workdir} -v ${outputdir}:${outputdir} -v \${tmpdir_job}:/scratch \
   -e TMPDIR=/scratch -e TMP=/scratch -e TEMP=/scratch \
@@ -266,7 +293,11 @@ run_qc() {
 
     local logfile="${logdir}/dwi-qc.log"
 
+    local cname="tractoprep_${subj}_qc_${BASHPID}_${RANDOM}"
+    echo "$cname" >> "$CONTAINERS_FILE"
+
     local cmd="${RUNTIME} run --rm ${USERNS_FLAG} \
+  --name ${cname} --label ${LABEL_KEY}=${LABEL_VALUE} \
   --security-opt label=disable --ipc=host \
   -v ${bidsdir}:${bidsdir} -v ${workdir}:${workdir} -v ${outputdir}:${outputdir} \
   -e OMP_NUM_THREADS=${QC_CPUS} -e ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=${QC_CPUS} \
@@ -302,6 +333,7 @@ process_subject() {
             ;;
         all)
             run_preproc "$subj" || return 1
+            run_qc     "$subj" || return 1
             run_tracto "$subj" || return 1
             run_qc     "$subj" || return 1
             ;;
@@ -471,13 +503,53 @@ fi
 # Run containers as the calling user (mimics apptainer behaviour).
 # --userns=keep-id is a rootless-podman feature; when podman itself
 # runs as root, the identity mapping is already correct without it.
-USERNS_FLAG="--userns=keep-id"
+USERNS_FLAG="--userns=keep-id --user $(id -u):$(id -g)"
 if [[ "$(id -u)" -eq 0 ]]; then
   USERNS_FLAG=""
 fi
 
 # Convert to absolute path
 templatejson="$(cd "$(dirname "$templatejson")" && pwd)/$(basename "$templatejson")"
+
+CONTAINERS_FILE=$(mktemp)
+LABEL_KEY="tractoprep_run_id"
+LABEL_VALUE="pid${BASHPID}_$(date +%s)"
+INTERRUPTED=0
+
+cleanup_and_exit() {
+    if [[ "$INTERRUPTED" -eq 1 ]]; then
+        echo -e "\n${RED}Second interrupt received — exiting immediately without waiting.${NC}"
+        exit 130
+    fi
+    INTERRUPTED=1
+    echo -e "\n${YELLOW}Interrupt received — stopping all running containers for this run...${NC}"
+    echo -e "${YELLOW}(press Ctrl+C again to skip the wait and exit immediately)${NC}"
+
+    # Primary: kill every container tagged with this run's label.
+    # This is the reliable path — it doesn't depend on any signal
+    # reaching the background subshells at all.
+    local ids
+    ids=$(${RUNTIME} ps -q --filter "label=${LABEL_KEY}=${LABEL_VALUE}" 2>/dev/null)
+    if [[ -n "$ids" ]]; then
+        # shellcheck disable=SC2086
+        ${RUNTIME} kill $ids 2>/dev/null
+    fi
+
+    # Fallback: kill by tracked name too, in case the label filter
+    # raced with a container that was still starting up.
+    if [[ -f "$CONTAINERS_FILE" ]]; then
+        while IFS= read -r cname; do
+            [[ -n "$cname" ]] && ${RUNTIME} kill "$cname" 2>/dev/null
+        done < "$CONTAINERS_FILE"
+    fi
+
+    echo -e "${YELLOW}Waiting for pipeline processes to exit...${NC}"
+    wait 2>/dev/null
+
+    echo -e "${RED}Aborted by user.${NC}"
+    exit 130
+}
+trap cleanup_and_exit INT TERM
 
 ########################
 # READ SPEC.JSON
@@ -546,12 +618,15 @@ echo ""
 ########################
 
 STATUS_DIR=$(mktemp -d)
-trap 'rm -rf "$STATUS_DIR"' EXIT
+trap 'rm -rf "$STATUS_DIR" "$CONTAINERS_FILE"' EXIT
 
 if [[ "$MAX_PARALLEL" -eq 1 ]]; then
     # ===== SERIAL MODE =====
     failed_subjects=()
     for subj in "${subjects[@]}"; do
+        if [[ "$INTERRUPTED" -eq 1 ]]; then
+            break
+        fi
         if process_subject "$subj" "$STAGE"; then
             echo -e "${GREEN}✓ ${subj} completed successfully.${NC}"
         else
@@ -568,6 +643,9 @@ else
 
     running=0
     for subj in "${subjects[@]}"; do
+        if [[ "$INTERRUPTED" -eq 1 ]]; then
+            break
+        fi
         (
             if process_subject "$subj" "$STAGE"; then
                 touch "$STATUS_DIR/success_${subj}"
