@@ -144,6 +144,18 @@ basedir="$(pwd)"
 jq --arg subj "$subj" '.subj = $subj' "${templatejson}" > "spec_${subj}.json"
 subjspecjson="${basedir}/spec_${subj}.json"
 
+# --- lowmem: pass into container as env var ONLY if the key exists in spec.json ---
+lowmem_env_flag=""
+if jq -e 'has("lowmem")' "${templatejson}" > /dev/null 2>&1; then
+    lowmem="${lowmem:-}"
+    if [[ -z "${lowmem}" ]]; then
+        echo "Error: 'lowmem' key exists in ${templatejson} but its value is empty."
+        exit 1
+    fi
+    lowmem_env_flag="--env lowmem=${lowmem}"
+    echo "lowmem found in spec (lowmem=${lowmem}); exporting to container for dwi-anat2dwi."
+fi
+
 if [[ "${preproc_only}" -eq 1 ]]; then
     echo "Mode: preproc-only (stages denoise + topup + eddy + anat2dwi + dwi-qc; skipping tractography stages)"
 else
@@ -298,6 +310,7 @@ else
       --pull=always --user=\"${run_user}\" \
       ${volflags} \
       --env TMPDIR=/scratch --env TMP=/scratch --env TEMP=/scratch --env HOME=/tmp \
+      ${lowmem_env_flag} \
       -v \"\${tmpdir_job}:/scratch\" \
       ${containerimage} dwi-anat2dwi ${subjspecjson}"
 
