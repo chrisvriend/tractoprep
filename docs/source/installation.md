@@ -14,7 +14,7 @@ uses the same commands as Docker. The container is approximately 19 GB.
 
 :::{tab-item} Docker
 `````bash
-docker pull docker://cvriend/tractoprep:{{RELEASE_TAG}}
+docker pull cvriend/tractoprep:{{RELEASE_TAG}}
 `````
 :::
 
@@ -31,6 +31,10 @@ apptainer pull docker://cvriend/tractoprep:{{RELEASE_TAG}}
 :::
 
 ::::
+
+```{note} 
+docker and pullman will automatically pull the container on the first run if it is not yet available and the server has an internet connection. A separate pull is therefore not mandatory
+```
 
 ## Option B — Direct .sif download (Apptainer)
 

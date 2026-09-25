@@ -18,7 +18,7 @@
 set -euo pipefail
 
 # Set your Docker image reference here
-containerimage="docker.io/cvriend/tractoprep:v1.0.6"
+containerimage="cvriend/tractoprep:v1.0.6"
 
 run_user="$(id -u):$(id -g)"
 

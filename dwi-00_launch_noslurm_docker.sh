@@ -35,7 +35,7 @@ set -uo pipefail
 ########################
 
 MAX_PARALLEL=1
-CONTAINERPATH="docker.io/cvriend/tractoprep:v1.0.6"
+CONTAINERPATH="cvriend/tractoprep:v1.0.6"
 NICE_LEVEL=10
 DRY_RUN=0
 SINGLE_SUBJECT=""
@@ -76,7 +76,7 @@ Options:
   --parallel N       Run N subjects concurrently (default: 1, serial)
   --serial           Run subjects one at a time (same as --parallel 1)
   --container REF    Docker image to run. Accepts a registry reference
-                     (e.g. docker.io/cvriend/tractoprep:latest), a local
+                     (e.g. cvriend/tractoprep:v1.0.6), a local
                      image name, or a path to a tar archive created with
                      'docker save' (an 'oci-archive:' prefix, as used by
                      podman, is also accepted). Pulled/loaded
@@ -108,7 +108,7 @@ Examples:
   $0 all --parallel 4 spec.json
 
   # Use a specific image
-  $0 preproc --container docker.io/user/tractoprep:latest spec.json
+  $0 preproc --container cvriend/tractoprep:v1.0.6 spec.json
 
   # Dry run (see what would be executed)
   $0 preproc --dry-run --parallel 4 spec.json
