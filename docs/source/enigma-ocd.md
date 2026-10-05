@@ -12,7 +12,13 @@ relevant data in a tar file saved in /derivatives.
 - Download the [clinical covariates file](https://surfdrive.surf.nl/s/2FETNYWDKsfswrn)
 - add the relevant demographic and clinical details for your participants with subject IDs starting with `sub-`
 - save the covariates file with the name of your `sample` in the filename.
-- upload the file to this [SurfDrive Dropbox](https://surfdrive.surf.nl/s/9LycMLdAWRR7mMm)
+
+### Up, Up and Away
+
+Upload the tar.bz2 file with the imaging measures and the clinical covariates file 
+to this [SurfDrive Dropbox](https://surfdrive.surf.nl/s/9LycMLdAWRR7mMm)
+
+
 
 ### Questions?
 c|dot| vriend ~ at ~ amsterdamumc|dot| nl
