@@ -45,7 +45,7 @@ for var in outputdir sitename ; do
   fi
 done  
 
-mkdir -p "${outputdir}/tosend"
+mkdir -p "${outputdir}/dwi-send"
 
 
 ### DWI parameters 
@@ -57,7 +57,7 @@ if [[ ! -d ${outputdir}/params && ! -f ${outputdir}/params/parameter_report.html
 
 else 
 
-  cp -r ${outputdir}/params ${outputdir}/tosend/ 
+  cp -r ${outputdir}/params ${outputdir}/dwi-send/ 
 fi 
 
 ### output files
@@ -69,16 +69,20 @@ cd "${outputdir}/dwi-tracto"
 # List of required files (relative to conn/, use ${subj} placeholder)
 # NOTE: single-quoted so ${subj} is NOT expanded here — it's expanded later via eval,
 # once ${subj} is actually set inside the loop.
+
 required_files=(
     '${subj}_atlas-300P7N_desc-streams_connmatrix.csv'
     '${subj}_atlas-300P7N_desc-FA_connmatrix.csv'
+    '${subj}_atlas-300P17N_desc-streams_connmatrix.csv'
+    '${subj}_atlas-300P17N_desc-FA_connmatrix.csv'
     '${subj}_atlas-400P7N_desc-streams_connmatrix.csv'
     '${subj}_atlas-400P7N_desc-FA_connmatrix.csv'
+    '${subj}_atlas-400P17N_desc-streams_connmatrix.csv'
+    '${subj}_atlas-400P17N_desc-FA_connmatrix.csv'
+    '${subj}_atlas-400P17N-Buckner_desc-streams_connmatrix.csv'
+    '${subj}_atlas-400P17N-Buckner_desc-FA_connmatrix.csv'
     '${subj}_atlas-BNA_desc-streams_connmatrix.csv'
     '${subj}_atlas-BNA_desc-FA_connmatrix.csv'
-
-    # '${subj}_another_required_file.ext'
-    # '${subj}_yet_another_file.ext'
 )
 
 # Usage: have_all_files <basepath>
@@ -122,9 +126,9 @@ for subj in sub-*; do
 
     # Build destination, preserving session subdir if present
     if [ -n "${ses}" ]; then
-        dest_conn="${outputdir}/tosend/${subj}/${ses}/conn"
+        dest_conn="${outputdir}/dwi-send/${subj}/${ses}/conn"
     else
-        dest_conn="${outputdir}/tosend/${subj}/conn"
+        dest_conn="${outputdir}/dwi-send/${subj}/conn"
     fi
     mkdir -p "${dest_conn}"
 
@@ -140,13 +144,13 @@ cd "${outputdir}/dwi-preproc"
 
 for subjhtml in sub-*.html; do
 
-  rsync -a ${subjhtml} ${outputdir}/tosend/
+  rsync -a ${subjhtml} ${outputdir}/dwi-send/
 
 done
 
 
 cd "${outputdir}"
-mv tosend ${sitename}_dwi_output
+mv dwi-send ${sitename}_dwi_output
 tar -jxcvf ${sitename}_dwi_output.tar.bz2 ${sitename}_dwi_output
 rm -r ${sitename}_dwi_output
 
@@ -154,7 +158,7 @@ log "${GREEN}" "----------------"
 log "${GREEN}" "Zipping complete"
 log "${GREEN}" "----------------"
 echo
-log "${GREEN}" "Please upload this tar file along with the Covariates file using the provided Surfdrive link"
+log "${GREEN}" "Please upload this tar file along with the Covariates file using the Surfdrive link on tractoprep.readthedocs.io/en/latest/enigma-ocd.html"
 echo
 log "${GREEN}" "Many thanks for your contribution to this ENIGMA project!!"
 

@@ -100,16 +100,19 @@ the methods for the ENIGMA OCD paper.
 ## dwi-send
 
 Copies the completed derivatives and makes them ready to send to the
-project lead, along with the clinical covariates file.
+project lead, along with the clinical covariates file (see {doc}`enigma-ocd`)
 
 **Outputs:**
-`dwi-send/TBA`
+/derivatives/`sitename`_dwi_output.tar.bz2
+
+This file contains the structural connectivity matrices and an overview of the relevant scan parameters.
+The Clinical covariates file needs to be filled in separately 
 
 
 ```{tip}
 Run these **in dependency order** for a fresh subject:
 `dwi-preproc` → `dwi-qc` → `dwi-tracto` → `dwi-qc` (updates previous qc html) → `dwi-send`, using `dwi-params`
-at any point you just need parameter extraction.
+at any point if you want to check the parameters of your dataset.
 ```
 
 ```{note}
