@@ -61,5 +61,5 @@ workflow
 QC
 troubleshooting
 enigma-ocd
-Acknowledgement
+Acknowledgements
 ```
