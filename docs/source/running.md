@@ -96,7 +96,6 @@ the methods for the ENIGMA OCD paper.
 `dwi-params/<subj>[_<session>]_parameters.json`
 
 
-
 ## dwi-send
 
 Copies the completed derivatives and makes them ready to send to the

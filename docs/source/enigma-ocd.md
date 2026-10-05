@@ -4,7 +4,7 @@ Below is an outline of the steps for the ENIGMA OCD structural connectome projec
 
 ## Finished processing, now what?!
 After preprocessing, qc-ing an running tractography to produce the structural connectome
-it is high time to upload the data. you can use `dwi-send` ({ref}`dwi-send`) to automatically organize the 
+it is high time to upload the data. you can use [dwi-send](running.md#dwi-send) to automatically organize the 
 relevant data in a tar file saved in /derivatives. 
 
 
