@@ -962,14 +962,33 @@ elif [ ${#fmap_samePE[@]} -eq 0 ] && [ ${#fmap_otherPE[@]} -eq 0 ]; then
         rsync -rltpD ${bidsdir}/${subj}${sessionpath}anat/${subj}${sessionfile}T1w.nii.gz \
             ${workdir}/${subj}${sessionpath}fmap/synb0/input
 
-        N4BiasFieldCorrection -d 3 \
-            -i ${workdir}/${subj}${sessionpath}fmap/synb0/input/${subj}${sessionfile}T1w.nii.gz \
-            -o ${workdir}/${subj}${sessionpath}fmap/synb0/input/${subj}${sessionfile}desc-n4_T1w.nii.gz
+        # reorient T1w to RAS for synthstrip
+        fslreorient2std \
+            ${workdir}/${subj}${sessionpath}fmap/synb0/input/${subj}${sessionfile}_T1w.nii.gz \
+            ${workdir}/${subj}${sessionpath}fmap/synb0/input/${subj}${sessionfile}_T1w.nii.gz
 
-        mri_synthstrip \
-            -i ${workdir}/${subj}${sessionpath}fmap/synb0/input/${subj}${sessionfile}desc-n4_T1w.nii.gz \
-            -o ${workdir}/${subj}${sessionpath}fmap/synb0/input/${subj}${sessionfile}desc-brain_T1w.nii.gz \
-            --mask ${workdir}/${subj}${sessionpath}fmap/synb0/input/${subj}${sessionfile}space-T1w_desc-brain_mask.nii.gz
+
+        if [ -f ${bidsdir}/${subj}${sessionpath}anat/${subj}${sessionfile}space-T1w_desc-brain_T1w.nii.gz ]; then
+            rsync -rltpD ${bidsdir}/${subj}${sessionpath}anat/${subj}${sessionfile}space-T1w_desc-brain_T1w.nii.gz \
+                ${workdir}/${subj}${sessionpath}fmap/synb0/input/${subj}${sessionfile}space-T1w_desc-brain_T1w.nii.gz
+
+            fslreorient2std \
+                ${workdir}/${subj}${sessionpath}fmap/synb0/input/${subj}${sessionfile}space-T1w_desc-brain_T1w.nii.gz \
+                ${workdir}/${subj}${sessionpath}fmap/synb0/input/${subj}${sessionfile}space-T1w_desc-brain_T1w.nii.gz
+            fslmaths ${workdir}/${subj}${sessionpath}fmap/synb0/input/${subj}${sessionfile}space-T1w_desc-brain_T1w.nii.gz \
+                -bin ${workdir}/${subj}${sessionpath}fmap/synb0/input/${subj}${sessionfile}space-T1w_desc-brain_mask.nii.gz
+
+        else
+           
+             if [[ ! -f ${workdir}/${subj}${sessionpath}fmap/synb0/input/${subj}${sessionfile}space-T1w_desc-brain_mask.nii.gz ]]; then
+                mri_synthstrip \
+                    -i ${workdir}/${subj}${sessionpath}fmap/synb0/input/${subj}${sessionfile}_T1w.nii.gz \
+                    -o ${workdir}/${subj}${sessionpath}fmap/synb0/input/${subj}${sessionfile}space-T1w_desc-brain_T1w.nii.gz \
+                    --mask ${workdir}/${subj}${sessionpath}fmap/synb0/input/${subj}${sessionfile}space-T1w_desc-brain_mask.nii.gz
+            fi
+     
+
+        fi  
 
         cd ${workdir}/${subj}${sessionpath}fmap/synb0/input
         if [ -L T1.nii.gz ]; then
@@ -978,7 +997,7 @@ elif [ ${#fmap_samePE[@]} -eq 0 ] && [ ${#fmap_otherPE[@]} -eq 0 ]; then
             unlink acqparams.txt
             unlink b0.nii.gz
         fi
-        ln -s ${subj}${sessionfile}desc-n4_T1w.nii.gz T1.nii.gz
+        ln -s ${subj}${sessionfile}_T1w.nii.gz T1.nii.gz
         ln -s ${subj}${sessionfile}desc-brain_T1w.nii.gz BRAIN.nii.gz
         ln -s ${subj}${sessionfile}dir-${dwidir}${otherdir}_desc-refparams.tsv acqparams.txt
         ln -s ${subj}${sessionfile}dir-${dwidir}_space-dwi_desc-b0_epi.nii.gz b0.nii.gz
