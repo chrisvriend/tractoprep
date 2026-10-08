@@ -949,7 +949,7 @@ elif [ ${#fmap_samePE[@]} -eq 0 ] && [ ${#fmap_otherPE[@]} -eq 0 ]; then
             "${workdir}/${subj}${sessionpath}fmap/synb0/input" \
             "${workdir}/${subj}${sessionpath}fmap/synb0/output"
 
-        rsync -rltpD ${workdir}/${subj}${sessionpath}fmap/${subj}${sessionfile}dir-${dwidir}${otherdir}_desc-refparams.tsv \
+        cp ${workdir}/${subj}${sessionpath}fmap/${subj}${sessionfile}dir-${dwidir}${otherdir}_desc-refparams.tsv \
             ${workdir}/${subj}${sessionpath}fmap/synb0/input/
 
         # extract first b0 vol from dwi
@@ -1015,9 +1015,6 @@ elif [ ${#fmap_samePE[@]} -eq 0 ] && [ ${#fmap_otherPE[@]} -eq 0 ]; then
             ${workdir}/${subj}${sessionpath}fmap/synb0/output/b0_u.nii.gz &&
             mv ${workdir}/${subj}${sessionpath}fmap/synb0/output/b0_all.nii.gz \
                 ${workdir}/${subj}${sessionpath}fmap/${subj}${sessionfile}dir-${dwidir}${otherdir}_space-dwi_desc-4topup_epi.nii.gz
-
-        mv ${workdir}/${subj}${sessionpath}fmap/synb0/input/${subj}${sessionfile}dir-${dwidir}${otherdir}_desc-refparams.tsv \
-            ${workdir}/${subj}${sessionpath}fmap/
 
         if [[ -f ${workdir}/${subj}${sessionpath}fmap/${subj}${sessionfile}dir-${dwidir}${otherdir}_space-dwi_desc-4topup_epi.nii.gz ]]; then
             rm -r ${workdir}/${subj}${sessionpath}fmap/synb0/
