@@ -964,8 +964,8 @@ elif [ ${#fmap_samePE[@]} -eq 0 ] && [ ${#fmap_otherPE[@]} -eq 0 ]; then
 
         # reorient T1w to RAS for synthstrip
         fslreorient2std \
-            ${workdir}/${subj}${sessionpath}fmap/synb0/input/${subj}${sessionfile}_T1w.nii.gz \
-            ${workdir}/${subj}${sessionpath}fmap/synb0/input/${subj}${sessionfile}_T1w.nii.gz
+            ${workdir}/${subj}${sessionpath}fmap/synb0/input/${subj}${sessionfile}T1w.nii.gz \
+            ${workdir}/${subj}${sessionpath}fmap/synb0/input/${subj}${sessionfile}T1w.nii.gz
 
 
         if [ -f ${bidsdir}/${subj}${sessionpath}anat/${subj}${sessionfile}space-T1w_desc-brain_T1w.nii.gz ]; then
@@ -982,7 +982,7 @@ elif [ ${#fmap_samePE[@]} -eq 0 ] && [ ${#fmap_otherPE[@]} -eq 0 ]; then
            
              if [[ ! -f ${workdir}/${subj}${sessionpath}fmap/synb0/input/${subj}${sessionfile}space-T1w_desc-brain_mask.nii.gz ]]; then
                 mri_synthstrip \
-                    -i ${workdir}/${subj}${sessionpath}fmap/synb0/input/${subj}${sessionfile}_T1w.nii.gz \
+                    -i ${workdir}/${subj}${sessionpath}fmap/synb0/input/${subj}${sessionfile}T1w.nii.gz \
                     -o ${workdir}/${subj}${sessionpath}fmap/synb0/input/${subj}${sessionfile}space-T1w_desc-brain_T1w.nii.gz \
                     --mask ${workdir}/${subj}${sessionpath}fmap/synb0/input/${subj}${sessionfile}space-T1w_desc-brain_mask.nii.gz
             fi
