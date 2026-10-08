@@ -997,7 +997,7 @@ elif [ ${#fmap_samePE[@]} -eq 0 ] && [ ${#fmap_otherPE[@]} -eq 0 ]; then
             unlink acqparams.txt
             unlink b0.nii.gz
         fi
-        ln -s ${subj}${sessionfile}_T1w.nii.gz T1.nii.gz
+        ln -s ${subj}${sessionfile}T1w.nii.gz T1.nii.gz
         ln -s ${subj}${sessionfile}desc-brain_T1w.nii.gz BRAIN.nii.gz
         ln -s ${subj}${sessionfile}dir-${dwidir}${otherdir}_desc-refparams.tsv acqparams.txt
         ln -s ${subj}${sessionfile}dir-${dwidir}_space-dwi_desc-b0_epi.nii.gz b0.nii.gz
