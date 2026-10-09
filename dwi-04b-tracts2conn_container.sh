@@ -161,12 +161,12 @@ mkdir -p "${workdir}/${subj}${sessionpath}conn"
 cd ${workdir}/${subj}${sessionpath}dwi
 
 # Determine whether it is single or multishell
-dwishells=$(mrinfo "${subj}${sessionfile}space-dwi_desc-preproc_dwi.mif" -shell_bvalues | \
+dwishells=$(mrinfo "${subj}${sessionfile}space-dwi_desc-preproc-biascor_dwi.mif" -shell_bvalues | \
 tr ' ' '\n' | awk '$1 > 0' )
 Nshells=$(echo "$dwishells" | wc -w)
 
 if (( Nshells > 1 )); then
-    lowshell=$(mrinfo "${subj}${sessionfile}space-dwi_desc-preproc_dwi.mif" -shell_bvalues |  tr ' ' '\n' | awk '$1 > 0' | head -n 1)
+    lowshell=$(mrinfo "${subj}${sessionfile}space-dwi_desc-preproc-biascor_dwi.mif" -shell_bvalues |  tr ' ' '\n' | awk '$1 > 0' | head -n 1)
     log "$YELLOW" "Multishell dwi detected"
     log "$YELLOW" "Using b=${lowshell} for DTI fitting"
     dwiextract ${subj}${sessionfile}space-dwi_desc-preproc-biascor_dwi.mif \
