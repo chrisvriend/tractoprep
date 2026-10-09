@@ -83,12 +83,12 @@ sessionfile="_${session:+${session}_}"
 # CHECK FILES
 ##############
 
-if [ -f "${outputdir}/dwi-connectome/${subj}${sessionpath}dwi/${subj}${sessionfile}space-dwi_tracto-${nstreamlines}.tck" ]; then
-    rsync -rltpD ${outputdir}/dwi-connectome/${subj}${sessionpath}dwi/${subj}${sessionfile}space-dwi_tracto-${nstreamlines}.tck \
+if [ -f "${outputdir}/dwi-tracto/${subj}${sessionpath}dwi/${subj}${sessionfile}space-dwi_tracto-${nstreamlines}.tck" ]; then
+    rsync -rltpD ${outputdir}/dwi-tracto/${subj}${sessionpath}dwi/${subj}${sessionfile}space-dwi_tracto-${nstreamlines}.tck \
         ${workdir}/${subj}${sessionpath}dwi/
 fi
-if [ -f "${outputdir}/dwi-connectome/${subj}${sessionpath}dwi/${subj}${sessionfile}space-dwi_tracto-${nstreamlines}_desc-sift_weights.txt" ]; then
-    rsync -rltpD ${outputdir}/dwi-connectome/${subj}${sessionpath}dwi/${subj}${sessionfile}space-dwi_tracto-${nstreamlines}_desc-sift_weights.txt \
+if [ -f "${outputdir}/dwi-tracto/${subj}${sessionpath}dwi/${subj}${sessionfile}space-dwi_tracto-${nstreamlines}_desc-sift_weights.txt" ]; then
+    rsync -rltpD ${outputdir}/dwi-tracto/${subj}${sessionpath}dwi/${subj}${sessionfile}space-dwi_tracto-${nstreamlines}_desc-sift_weights.txt \
         ${workdir}/${subj}${sessionpath}dwi/
 fi
 
@@ -107,8 +107,8 @@ elif [[ ! -f ${workdir}/${subj}${sessionpath}dwi/${subj}${sessionfile}space-dwi_
         -bias "${subj}${sessionfile}space-dwi_desc-biasest_dwi.mif" \
         -scratch "${workdir}/${subj}${sessionpath}tempbiascorrect" -force
     rm "${subj}${sessionfile}space-dwi_desc-preproc_dwi.mif"
-elif [ -f "${outputdir}/dwi-connectome/${subj}${sessionpath}dwi/${subj}${sessionfile}space-dwi_desc-preproc_dwi.nii.gz" ]; then 
-    rsync -rltpD ${outputdir}/dwi-connectome/${subj}${sessionpath}dwi/${subj}${sessionfile}space-dwi_desc-preproc_dwi.* \
+elif [ -f "${outputdir}/dwi-tracto/${subj}${sessionpath}dwi/${subj}${sessionfile}space-dwi_desc-preproc_dwi.nii.gz" ]; then 
+    rsync -rltpD ${outputdir}/dwi-tracto/${subj}${sessionpath}dwi/${subj}${sessionfile}space-dwi_desc-preproc_dwi.* \
         ${workdir}/${subj}${sessionpath}dwi/
     cd "${workdir}/${subj}${sessionpath}dwi"
     mrconvert "${subj}${sessionfile}space-dwi_desc-preproc_dwi.nii.gz" \

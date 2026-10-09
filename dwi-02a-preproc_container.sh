@@ -1012,9 +1012,10 @@ elif [ ${#fmap_samePE[@]} -eq 0 ] && [ ${#fmap_otherPE[@]} -eq 0 ]; then
 
         fslmerge -t ${workdir}/${subj}${sessionpath}fmap/synb0/output/b0_all.nii.gz \
             ${workdir}/${subj}${sessionpath}fmap/synb0/output/b0_d_smooth.nii.gz \
-            ${workdir}/${subj}${sessionpath}fmap/synb0/output/b0_u.nii.gz &&
-            mv ${workdir}/${subj}${sessionpath}fmap/synb0/output/b0_all.nii.gz \
-                ${workdir}/${subj}${sessionpath}fmap/${subj}${sessionfile}dir-${dwidir}${otherdir}_space-dwi_desc-4topup_epi.nii.gz
+            ${workdir}/${subj}${sessionpath}fmap/synb0/output/b0_u.nii.gz
+
+        mv ${workdir}/${subj}${sessionpath}fmap/synb0/output/b0_all.nii.gz \
+            ${workdir}/${subj}${sessionpath}fmap/${subj}${sessionfile}dir-${dwidir}${otherdir}_space-dwi_desc-4topup_epi.nii.gz
 
         if [[ -f ${workdir}/${subj}${sessionpath}fmap/${subj}${sessionfile}dir-${dwidir}${otherdir}_space-dwi_desc-4topup_epi.nii.gz ]]; then
             rm -r ${workdir}/${subj}${sessionpath}fmap/synb0/
