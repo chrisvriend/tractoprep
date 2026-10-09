@@ -103,7 +103,7 @@ elif [[ ! -f ${workdir}/${subj}${sessionpath}dwi/${subj}${sessionfile}space-dwi_
         "${subj}${sessionfile}space-dwi_desc-preproc_dwi.bval" \
         "${subj}${sessionfile}space-dwi_desc-preproc_dwi.mif" -force
     dwibiascorrect ants "${subj}${sessionfile}space-dwi_desc-preproc_dwi.mif" \
-        "${subj}${sessionfile}space-dwi_desc-preproc-biascor_dwi.mif" -nthreads "${threads}" \
+        "${subj}${sessionfile}space-dwi_desc-preproc-biascor_dwi.mif" -nthreads "${nthreads}" \
         -bias "${subj}${sessionfile}space-dwi_desc-biasest_dwi.mif" \
         -scratch "${workdir}/${subj}${sessionpath}tempbiascorrect" -force
     rm "${subj}${sessionfile}space-dwi_desc-preproc_dwi.mif"
@@ -116,7 +116,7 @@ elif [ -f "${outputdir}/dwi-tracto/${subj}${sessionpath}dwi/${subj}${sessionfile
         "${subj}${sessionfile}space-dwi_desc-preproc_dwi.bval" \
         "${subj}${sessionfile}space-dwi_desc-preproc_dwi.mif" -force
     dwibiascorrect ants "${subj}${sessionfile}space-dwi_desc-preproc_dwi.mif" \
-        "${subj}${sessionfile}space-dwi_desc-preproc-biascor_dwi.mif" -nthreads "${threads}" \
+        "${subj}${sessionfile}space-dwi_desc-preproc-biascor_dwi.mif" -nthreads "${nthreads}" \
         -bias "${subj}${sessionfile}space-dwi_desc-biasest_dwi.mif" \
         -scratch "${workdir}/${subj}${sessionpath}tempbiascorrect" -force
     rm "${subj}${sessionfile}space-dwi_desc-preproc_dwi.mif"
