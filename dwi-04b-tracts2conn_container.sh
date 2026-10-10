@@ -92,6 +92,13 @@ if [ -f "${outputdir}/dwi-tracto/${subj}${sessionpath}dwi/${subj}${sessionfile}s
         ${workdir}/${subj}${sessionpath}dwi/
 fi
 
+if [ -f ${outputdir}/dwi-preproc/${subj}${sessionpath}dwi/${subj}${sessionfile}space-dwi_desc-brain_mask.nii.gz ]; then
+
+  rsync -rltpD ${outputdir}/dwi-tracto/${outputdir}/dwi-preproc/${subj}${sessionpath}dwi/${subj}${sessionfile}space-dwi_desc-brain_mask.nii.gz \
+        ${workdir}/${subj}${sessionpath}dwi/
+fi
+
+
 if [ -f ${workdir}/${subj}${sessionpath}dwi/${subj}${sessionfile}space-dwi_desc-preproc-biascor_dwi.mif ]; then
     :
 elif [[ ! -f ${workdir}/${subj}${sessionpath}dwi/${subj}${sessionfile}space-dwi_desc-preproc-biascor_dwi.mif ]] \
