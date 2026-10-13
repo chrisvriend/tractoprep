@@ -147,13 +147,30 @@ outxfms="${outputdir}/dwi-preproc/${subj}${sessionpath}xfms"
 outqc="${outputdir}/dwi-preproc/${subj}${sessionpath}qc"
 hybridtemplate="${workanat}/${pref}space-dwi_res-high_template.nii.gz"
 
-# Check if output already exists
-if compgen -G "${outanat}/${pref}space-dwi_atlas-*_dseg.nii.gz" > /dev/null; then
-    log "$GREEN" "${subj}${sessionfile} already has atlases in dwi-space"
+
+
+files=(
+    "${outanat}/${pref}space-dwi_res-high_atlas-300P17N_dseg.nii.gz"
+    "${outanat}/${pref}space-dwi_res-high_atlas-400P17N_dseg.nii.gz"
+    "${outanat}/${pref}space-dwi_res-high_atlas-400P17N-Buckner_dseg.nii.gz"
+    "${outanat}/${pref}space-dwi_res-high_desc-gmwm_probseg.nii.gz"
+)
+
+missing=()
+for file in "${files[@]}"; do
+    if [ ! -f "${file}" ]; then
+        missing+=("${file}")
+    fi
+done
+
+if [ ${#missing[@]} -eq 0 ]; then
+
+ log "$GREEN" "${subj}${sessionfile} already has atlases in dwi-space"
     log "$GREEN" "...skip..."
     exit 0
-
-else 
+   
+else
+ 
     echo
     echo "-----------------------------------"
     log "$YELLOW" "anat -2- dwi for subject: ${subj} ${session}"

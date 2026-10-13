@@ -136,10 +136,10 @@ else
 fi
 
 
-if [ -f ${outputdir}/dwi-preproc/${subj}${sessionpath}dwi/${subj}${sessionfile}space-dwi_desc-odi_noddi.nii.gz ]; then
+if [ -f ${outputdir}/dwi-preproc/${subj}${sessionpath}dwi/${subj}${sessionfile}space-dwi_desc-ndi_noddi.nii.gz ]; then
     log "$YELLOW" "Found noddi output in output directory"
     log "$YELLOW" "...copying to workdir"
-    rsync -rltpD ${outputdir}/dwi-preproc/${subj}${sessionpath}dwi/${subj}${sessionfile}space-dwi_desc-odi_noddi.nii.gz \
+    rsync -rltpD ${outputdir}/dwi-preproc/${subj}${sessionpath}dwi/${subj}${sessionfile}space-dwi_desc-ndi_noddi.nii.gz \
         ${workdir}/${subj}${sessionpath}dwi/
 fi
 
@@ -211,7 +211,7 @@ for diff in FA ndi; do
     if [[ ${diff} == FA ]]; then
         inputfile=${subj}${sessionfile}space-dwi_desc-lowbval_FA.nii.gz
     elif [[ ${diff} == ndi ]]; then
-        inputfile=${subj}${sessionfile}space-dwi_desc-odi_noddi.nii.gz
+        inputfile=${subj}${sessionfile}space-dwi_desc-ndi_noddi.nii.gz
     fi
 
     if [ ! -f ${subj}${sessionfile}space-dwi_desc-${diff}_stats.csv ] &&
