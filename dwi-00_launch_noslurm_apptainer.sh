@@ -146,6 +146,7 @@ run_stage() {
 # run_preproc: Stage 1 — dwi-preproc + eddy
 #   $1 = subject ID
 # ----------------------------------------------------------------
+
 run_preproc() {
     local subj="$1"
     local session="${session:-}"
@@ -156,7 +157,7 @@ run_preproc() {
     local logdir="${outputdir}/logs/${subj}${sessionpath}"
     mkdir -p "${logdir}"
 
-    local subjspecjson="${bidsdir}/spec_${subj}.json"
+    local subjspecjson="${logdir}/spec_${subj}.json"
     jq --arg subj "$subj" '.subj = $subj' "${templatejson}" > "${subjspecjson}"
 
     # Expected output files (skip-logic)
@@ -173,14 +174,16 @@ run_preproc() {
         return 0
     fi
 
-    local cmd="tmpdir_job=\"${workdir}/tmp/${subj}${sessionfile}\${BASHPID}\"; \
-mkdir -p \"\${tmpdir_job}\"; \
-trap 'rm -rf \"\${tmpdir_job}\"' EXIT; \
-${RUNTIME} run --cleanenv \
-  --bind ${bidsdir}:${bidsdir},${workdir}:${workdir},${outputdir}:${outputdir},\${tmpdir_job}:/scratch \
-  --env TMPDIR=/scratch --env TMP=/scratch --env TEMP=/scratch \
-  --env OMP_NUM_THREADS=${PREPROC_CPUS} \
-  ${CONTAINERPATH} dwi-preproc ${subjspecjson}"
+      local cmd="tmpdir_job=\"${workdir}/tmp/${subj}${sessionfile}\${BASHPID}\"; \
+  mkdir -p \"\${tmpdir_job}\"; \
+  trap 'rm -rf \"\${tmpdir_job}\"' EXIT; \
+  ${RUNTIME} run --cleanenv \
+    --bind ${bidsdir}:${bidsdir},${workdir}:${workdir},${outputdir}:${outputdir},\${tmpdir_job}:/scratch \
+    --env TMPDIR=/scratch --env TMP=/scratch --env TEMP=/scratch \
+    --env OMP_NUM_THREADS=${PREPROC_CPUS} \
+    ${lowmem_env_flag} \
+    ${CONTAINERPATH} dwi-preproc ${subjspecjson}"
+
 
     if ! run_stage "dwi-preproc" "$cmd" "$PREPROC_CPUS" "$logfile" "$subj"; then
         echo -e "${RED}ERROR: dwi-preproc failed for ${subj}.${NC}" | tee -a "$logfile"
@@ -203,7 +206,7 @@ run_tracto() {
     local logdir="${outputdir}/logs/${subj}${sessionpath}"
     mkdir -p "${logdir}"
 
-    local subjspecjson="${bidsdir}/spec_${subj}.json"
+    local subjspecjson="${logdir}/spec_${subj}.json"
     jq --arg subj "$subj" '.subj = $subj' "${templatejson}" > "${subjspecjson}"
 
     # Expected output files (skip-logic)
@@ -247,7 +250,7 @@ run_qc() {
     local logdir="${outputdir}/logs/${subj}${sessionpath}"
     mkdir -p "${logdir}"
 
-    local subjspecjson="${bidsdir}/spec_${subj}.json"
+    local subjspecjson="${logdir}/spec_${subj}.json"
     jq --arg subj "$subj" '.subj = $subj' "${templatejson}" > "${subjspecjson}"
 
     local bindcmd="${bidsdir}:${bidsdir},${workdir}:${workdir},${outputdir}:${outputdir}"
@@ -442,6 +445,20 @@ for key in $(jq -r 'keys[]' "${templatejson}"); do
 done
 
 unset subj
+
+# --- lowmem: pass into container as env var ONLY if the key exists in spec.json ---
+lowmem_env_flag=""
+if jq -e 'has("lowmem")' "${templatejson}" > /dev/null 2>&1; then
+    lowmem="${lowmem:-}"
+    if [[ -z "${lowmem}" ]]; then
+        echo "Error: 'lowmem' key exists in ${templatejson} but its value is empty."
+        exit 1
+    fi
+    lowmem_env_flag="--env lowmem=${lowmem}"
+    echo "lowmem found in spec (lowmem=${lowmem}); exporting to container for dwi-preproc (anat2dwi step)."
+
+fi
+
 
 for var in bidsdir outputdir workdir eddy_method nstreamlines; do
   if [[ -z "${!var:-}" ]]; then

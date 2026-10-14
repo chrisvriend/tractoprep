@@ -127,10 +127,20 @@ fi
 # arrays are 0-indexed, SLURM_ARRAY_TASK_ID starts at 1
 subj="${subjects[$((SLURM_ARRAY_TASK_ID - 1))]}"
 
+sessionpath="/${session:+${session}/}"
+sessionfile="_${session:+${session}_}"
+
+# Logs are written directly by SLURM on the compute node, so they use
+# the HOST output path.
+logdir="${host_outputdir}/logs/${subj}${sessionpath}"
+mkdir -p "${logdir}"
+
+cd ${host_workdir}
+
 basedir="$(pwd)"
 
-jq --arg subj "$subj" '.subj = $subj' "${templatejson}" > "spec_${subj}.json"
-subjspecjson="${basedir}/spec_${subj}.json"
+jq --arg subj "$subj" '.subj = $subj' "${templatejson}" > "${logdir}/spec_${subj}.json"
+subjspecjson="${logdir}/spec_${subj}.json"
 
 # --- lowmem: pass into container as env var ONLY if the key exists in spec.json ---
 lowmem_env_flag=""
@@ -152,13 +162,6 @@ else
 fi
 echo "Submitting jobs for ${subj} ${session:-}..."
 
-sessionpath="/${session:+${session}/}"
-sessionfile="_${session:+${session}_}"
-
-# Logs are written directly by SLURM on the compute node, so they use
-# the HOST output path.
-logdir="${host_outputdir}/logs/${subj}${sessionpath}"
-mkdir -p "${logdir}"
 
 # bind mounts: HOST path : CONTAINER path (container path comes from spec.json)
 bindcmd="${host_bidsdir}:${bidsdir},${host_workdir}:${workdir},${host_outputdir}:${outputdir},${basedir}:${basedir},${host_freesurferdir}:${freesurferdir}"
