@@ -151,6 +151,7 @@ hybridtemplate="${workanat}/${pref}space-dwi_res-high_template.nii.gz"
 
 files=(
     "${outanat}/${pref}space-dwi_res-high_atlas-300P17N_dseg.nii.gz"
+    "${outanat}/${pref}space-dwi_res-high_atlas-300P17N-Buckner_dseg.nii.gz"
     "${outanat}/${pref}space-dwi_res-high_atlas-400P17N_dseg.nii.gz"
     "${outanat}/${pref}space-dwi_res-high_atlas-400P17N-Buckner_dseg.nii.gz"
     "${outanat}/${pref}space-dwi_res-high_desc-gmwm_probseg.nii.gz"
