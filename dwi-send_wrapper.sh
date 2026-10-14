@@ -79,6 +79,8 @@ required_files=(
     '${subj}_atlas-400P7N_desc-FA_connmatrix.csv'
     '${subj}_atlas-400P17N_desc-streams_connmatrix.csv'
     '${subj}_atlas-400P17N_desc-FA_connmatrix.csv'
+    '${subj}_atlas-300P17N-Buckner_desc-streams_connmatrix.csv'
+    '${subj}_atlas-300P17N-Buckner_desc-FA_connmatrix.csv'
     '${subj}_atlas-400P17N-Buckner_desc-streams_connmatrix.csv'
     '${subj}_atlas-400P17N-Buckner_desc-FA_connmatrix.csv'
     '${subj}_atlas-BNA_desc-streams_connmatrix.csv'
@@ -120,8 +122,8 @@ for subj in sub-*; do
 
     if [ -z "${src_conn}" ]; then
         log "$RED" "ERROR! ${subj} does not have all required output files"
-        log "$RED" "rerun tractography for ${subj} or delete the folder"
-        exit 1
+        log "$RED" "rerun dwi-tracto for ${subj} or delete the folder"
+        continue
     fi
 
     # Build destination, preserving session subdir if present
