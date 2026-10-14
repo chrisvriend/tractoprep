@@ -836,7 +836,7 @@ declare -A atlas_id_map=(
     ["BNA+cerebellum"]="BNA+CER_labels"
 )
 
-for atlas in BNA 300P17N 400P17N; do
+for atlas in BNA 300P7N 400P7N 300P17N 400P17N; do
     src_mgz="${SUBJECTS_DIR}/${subj}/mri/${atlas}+aseg.mgz"
     if [[ ! -f "${src_mgz}" ]]; then
         log "$YELLOW" "WARNING! atlas: ${atlas} - not available in FreeSurfer directory of ${subj}"
@@ -872,24 +872,56 @@ convert_to_dwi_space "${SUBJECTS_DIR}/${subj}/mri/Buckner2011_17Networks.mgz" \
 # Offset Buckner label IDs to avoid collision with 400P17N node IDs.
 # Computed dynamically instead of hardcoded, so it stays correct if the
 # parcellation's max node count ever changes.
-Nnodes=$(awk 'BEGIN{m=0} $1+0>m{m=$1} END{print m}' \
-    "${atlasdir}/Schaefer/Schaefer_400P17N_modified.txt")
-awk -v c="$Nnodes" -v OFS='\t' '{ $1 = $1 + c; print }' \
-    "${atlasdir}/Buckner/Buckner_17Networks_orig.txt" \
-    > "${workanat}/Buckner_17Networks_mod.txt"
 
-labelconvert "${buckner_temp}" \
-    "${atlasdir}/Buckner/Buckner_17Networks_orig.txt" \
-    "${workanat}/Buckner_17Networks_mod.txt" \
-    "${workanat}/${pref}space-dwi_res-high_atlas-Buckner_dseg.nii.gz" -force
-fix_strides "${workanat}/${pref}space-dwi_res-high_atlas-Buckner_dseg.nii.gz" "${hybridtemplate}"
+for parc in 400 300; do
+    echo "adding Buckner atlas to ${parc}P17N..."
+
+    schaefer_lut="${atlasdir}/Schaefer/Schaefer_${parc}P17N_modified.txt"
+    buckner_mod="${workanat}/Buckner_17Networks_mod.txt"
+    buckner_dseg="${workanat}/${pref}space-dwi_res-high_atlas-Buckner${parc}_dseg.nii.gz"
+    schaefer_dseg="${workanat}/${pref}space-dwi_res-high_atlas-${parc}P17N_dseg.nii.gz"
+    merged_dseg="${workanat}/${pref}space-dwi_res-high_atlas-${parc}P17N-Buckner_dseg.nii.gz"
+
+    # Offset Buckner label IDs to avoid collision with ${parc}P17N node IDs.
+    # Computed dynamically so it stays correct if the node count ever changes.
+    Nnodes=$(awk 'BEGIN{m=0} $1+0>m{m=$1} END{print m}' "${schaefer_lut}")
+    awk -v c="$Nnodes" -v OFS='\t' '{ $1 = $1 + c; print }' \
+        "${atlasdir}/Buckner/Buckner_17Networks_orig.txt" \
+        > "${buckner_mod}"
+
+    labelconvert "${buckner_temp}" \
+        "${atlasdir}/Buckner/Buckner_17Networks_orig.txt" \
+        "${buckner_mod}" \
+        "${buckner_dseg}" -force
+    fix_strides "${buckner_dseg}" "${hybridtemplate}"
+
+    # --- merge Buckner into ${parc}P17N ---
+    fslmaths "${schaefer_dseg}" -add "${buckner_dseg}" "${merged_dseg}"
+done
+
+# Clean up only after both iterations are done
 rm -f "${buckner_temp}"
 
-# --- merge Buckner into 400P17N ---
-fslmaths "${workanat}/${pref}space-dwi_res-high_atlas-400P17N_dseg.nii.gz" \
-    -add "${workanat}/${pref}space-dwi_res-high_atlas-Buckner_dseg.nii.gz" \
-    "${workanat}/${pref}space-dwi_res-high_atlas-400P17N-Buckner_dseg.nii.gz"
 
+# temp code for 400P17N-Buckner merge, not used anymore
+
+# Nnodes=$(awk 'BEGIN{m=0} $1+0>m{m=$1} END{print m}' \
+#     "${atlasdir}/Schaefer/Schaefer_400P17N_modified.txt")
+# awk -v c="$Nnodes" -v OFS='\t' '{ $1 = $1 + c; print }' \
+#     "${atlasdir}/Buckner/Buckner_17Networks_orig.txt" \
+#     > "${workanat}/Buckner_17Networks_mod.txt"
+
+# labelconvert "${buckner_temp}" \
+#     "${atlasdir}/Buckner/Buckner_17Networks_orig.txt" \
+#     "${workanat}/Buckner_17Networks_mod.txt" \
+#     "${workanat}/${pref}space-dwi_res-high_atlas-Buckner_dseg.nii.gz" -force
+# fix_strides "${workanat}/${pref}space-dwi_res-high_atlas-Buckner_dseg.nii.gz" "${hybridtemplate}"
+# rm -f "${buckner_temp}"
+
+# # --- merge Buckner into 400P17N ---
+# fslmaths "${workanat}/${pref}space-dwi_res-high_atlas-400P17N_dseg.nii.gz" \
+#     -add "${workanat}/${pref}space-dwi_res-high_atlas-Buckner_dseg.nii.gz" \
+#     "${workanat}/${pref}space-dwi_res-high_atlas-400P17N-Buckner_dseg.nii.gz"
 
 
 # Transfer files
