@@ -94,7 +94,7 @@ fi
 
 if [ -f ${outputdir}/dwi-preproc/${subj}${sessionpath}dwi/${subj}${sessionfile}space-dwi_desc-brain_mask.nii.gz ]; then
 
-  rsync -rltpD ${outputdir}/dwi-tracto/${outputdir}/dwi-preproc/${subj}${sessionpath}dwi/${subj}${sessionfile}space-dwi_desc-brain_mask.nii.gz \
+  rsync -rltpD ${outputdir}/dwi-preproc/${subj}${sessionpath}dwi/${subj}${sessionfile}space-dwi_desc-brain_mask.nii.gz \
         ${workdir}/${subj}${sessionpath}dwi/
 fi
 
