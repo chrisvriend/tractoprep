@@ -52,7 +52,7 @@ if `nthreads` > 2.
 
 ## dwi-tracto
 
-Performs tractography (fiber orientation estimation and streamline
+Performs tractography ( + fiber orientation estimation and streamline
 generation) on the preprocessed DWI data from the previous step. Throws
 an error if no preprocessed diffusion MRI or 5TT segmentation file is
 available. The default for the ENIGMA OCD project is 20 million seeds
@@ -168,7 +168,7 @@ SELinux-enforcing hosts — omit it if not applicable.
 
 ## Disk Space requirements
 - Make sure you have sufficient disk space for a workdir (1-2GB / subject).
-  subject-specific work directories are deleted automatically after successful completion the pipeline
+  subject-specific work directories are deleted automatically after successful completion of the pipeline
 - dwi-preproc output ~ 500 MB - 1 GB / subject
 - dwi-tracto output ~ 1-2 GB / subject
 - freesurfer output ~ 500 MB / subject
@@ -187,6 +187,6 @@ SELinux-enforcing hosts — omit it if not applicable.
 
 
 :::{note}
-`run time` also depends on the CPU hardware, clockspeed, storage performance and system load.
+`run time` also depends on the number of dwi volumes, the CPU hardware, clockspeed, storage performance and system load.
 :::
 

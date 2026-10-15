@@ -7,11 +7,13 @@
 4. **Run `dwi-preproc`** for each subject/session. Loop this per
    subject on a cluster using the (SLURM) launcher scripts (see below), or
    script your own loop calling Docker/Podman/Apptainer per subject.
-5. **Inspect QC outputs** (`dwi-qc`) before proceeding — check for remaining        artefacts and registration quality 
-6. **Run `dwi-tracto`** on subjects that pass QC.
+5a. **Inspect QC outputs** (`dwi-qc`) before proceeding — check for remaining artefacts and registration quality 
+5b. (**Delete** volumes with remaining artefacts or exclude the entire scan (see {doc}`QC`)
+6. **Run `dwi-tracto`** on subjects that passed QC.
 7. **Run `dwi-qc`** (again) to update qc html pages with tracto-specific QC.
 8. **Run `dwi-send`** to prepare the completed derivatives for upload (for the ENIGMA OCD project)
-9. Use **`dwi-params`** at any stage to pull out acquisition/processing
+
+Use **`dwi-params`** at any stage to pull out acquisition/processing
    parameters for logging or a shared summary spreadsheet.
 
 ```{seealso}
