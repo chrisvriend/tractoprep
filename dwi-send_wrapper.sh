@@ -11,6 +11,7 @@ NC='\033[0m'
 BLUE='\033[0;34m'
 GREEN='\033[0;32m'
 RED='\033[0;31m'
+YELLOW='\033[0;33m'
 
 Usage() {
   echo "Usage: $0 <path_to_spec.json>"
@@ -43,28 +44,30 @@ for var in outputdir sitename ; do
     log "$RED" "Error: Variable '$var' is not set or is empty."
     exit 1
   fi
-done  
+done
 
 mkdir -p "${outputdir}/dwi-send"
 
 
-### DWI parameters 
-if [[ ! -d ${outputdir}/params && ! -f ${outputdir}/params/parameter_report.html ]]; then
+### DWI parameters
+# Re-extract if the params folder OR the report is missing
+if [[ ! -d "${outputdir}/dwi-params" || ! -f "${outputdir}/dwi-params/parameter_report.html" ]]; then
 
   log "${YELLOW}" "extract dwi / T1w parameters (to write methods section)"
 
-  /tracto/dwi-extract_parameters.sh ${jsonfile}
+  /tracto/dwi-extract_parameters.sh "${jsonfile}"
 
-else 
+fi
 
-  cp -r ${outputdir}/params ${outputdir}/dwi-send/ 
-fi 
+# Copy params into the package if they exist (after extraction or already present)
+if [[ -d "${outputdir}/dwi-params" ]]; then
+  cp -r "${outputdir}/dwi-params" "${outputdir}/dwi-send/"
+else
+  log "$RED" "WARNING: ${outputdir}/dwi-params not found, parameters will not be included"
+fi
 
-### output files
-
-
-# connectivity matrices 
-cd "${outputdir}/dwi-tracto"
+# connectivity matrices
+cd "${outputdir}/dwi-tracto" || { log "$RED" "Error: cannot cd to ${outputdir}/dwi-tracto"; exit 1; }
 
 # List of required files (relative to conn/, use ${subj} placeholder)
 # NOTE: single-quoted so ${subj} is NOT expanded here — it's expanded later via eval,
@@ -89,26 +92,35 @@ required_files=(
 
 # Usage: have_all_files <basepath>
 # (relies on $subj being set in the calling scope)
+# Returns 0 if all files exist, 1 otherwise.
+# Populates the global array `missing_files` with the names of any missing files.
 have_all_files() {
     local basepath="$1"
     local f fname
+    missing_files=()
     for f in "${required_files[@]}"; do
         fname=$(eval echo "$f")
-        [ -f "${basepath}/${fname}" ] || return 1
+        [ -f "${basepath}/${fname}" ] || missing_files+=("${fname}")
     done
-    return 0
+    [ ${#missing_files[@]} -eq 0 ]
 }
+
+# Tracks missing files per location so they can be reported if nothing is complete
+declare -A missing_report
 
 for subj in sub-*; do
     [ -d "${subj}" ] || continue
 
     src_conn=""
     ses=""
+    missing_report=()
 
     # 1) Try without session: sub-XXX/conn/
     if have_all_files "${subj}/conn"; then
         src_conn="${subj}/conn"
     else
+        missing_report["${subj}/conn"]="${missing_files[*]}"
+
         # 2) Try with any session: sub-XXX/ses-YYY/conn/
         for sesdir in "${subj}"/ses-*; do
             [ -d "${sesdir}" ] || continue
@@ -116,12 +128,24 @@ for subj in sub-*; do
                 src_conn="${sesdir}/conn"
                 ses="$(basename "${sesdir}")"
                 break
+            else
+                missing_report["${sesdir}/conn"]="${missing_files[*]}"
             fi
         done
     fi
 
     if [ -z "${src_conn}" ]; then
         log "$RED" "ERROR! ${subj} does not have all required output files"
+        for loc in "${!missing_report[@]}"; do
+            if [ -d "${loc}" ]; then
+                log "$RED" "  Missing in ${loc}/:"
+                for m in ${missing_report[$loc]}; do
+                    log "$RED" "    - ${m}"
+                done
+            else
+                log "$RED" "  Directory not found: ${loc}/"
+            fi
+        done
         log "$RED" "rerun dwi-tracto for ${subj} or delete the folder"
         continue
     fi
@@ -136,25 +160,24 @@ for subj in sub-*; do
 
     for f in "${required_files[@]}"; do
         fname=$(eval echo "$f")
-        rsync -a "${src_conn}/${fname}" "${dest_conn}/"
+        rsync -rltpD "${src_conn}/${fname}" "${dest_conn}/"
     done
 done
 
 
 # qc html files
-cd "${outputdir}/dwi-preproc"
+cd "${outputdir}/dwi-preproc" || { log "$RED" "Error: cannot cd to ${outputdir}/dwi-preproc"; exit 1; }
 
 for subjhtml in sub-*.html; do
-
-  rsync -a ${subjhtml} ${outputdir}/dwi-send/
-
+  [ -f "${subjhtml}" ] || continue   # skip if the glob matched nothing
+  rsync -rltpD "${subjhtml}" "${outputdir}/dwi-send/"
 done
 
 
-cd "${outputdir}"
-mv dwi-send ${sitename}_dwi_output
-tar -jxcvf ${sitename}_dwi_output.tar.bz2 ${sitename}_dwi_output
-rm -r ${sitename}_dwi_output
+cd "${outputdir}" || exit 1
+mv dwi-send "${sitename}_dwi_output"
+tar -jcvf "${sitename}_dwi_output.tar.bz2" "${sitename}_dwi_output"
+rm -r "${sitename}_dwi_output"
 
 log "${GREEN}" "----------------"
 log "${GREEN}" "Zipping complete"
@@ -163,9 +186,3 @@ echo
 log "${GREEN}" "Please upload this tar file along with the Covariates file using the Surfdrive link on tractoprep.readthedocs.io/en/latest/enigma-ocd.html"
 echo
 log "${GREEN}" "Many thanks for your contribution to this ENIGMA project!!"
-
-
-
-
- 
-
