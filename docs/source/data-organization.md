@@ -4,21 +4,31 @@
   `dwi/` data with valid JSON sidecars. The pipeline reads
   `PhaseEncodingDirection` and `TotalReadoutTime` directly from the
   diffusion MRI JSON file — make sure these fields are populated.
+
 - Optionally, field maps with `PhaseEncodingDirection`,
   `TotalReadoutTime`, and a correct `IntendedFor` entry (pointing to the
   diffusion MRI image(s)). If no field maps are present, the pipeline
   automatically falls back to **Synb0-DISCO** (synthetic b0) for
   susceptibility distortion correction — this needs the anatomical T1w
   to be available.
+
 - (Optional) A **FreeSurfer output directory** (`freesurferdir`) if you
   already have FreeSurfer output available for these participants.
 
 
 ```{note}
-while existing FreeSurfer output for a subject is optional. the freesurferdir should be indicated 
-in the {doc}`spec.json` file. 
+while existing FreeSurfer output is optional. the location of the (future)
+freesurferdir should be indicated in the {doc}`spec.json` file.
 
 ```
+
+
+```{important}
+For the ENIGMA OCD project we kindly ask you to run FreeSurfer (v8.2.0) using 
+this tractoprep pipeline to prepare for future projects.
+```
+
+---
 
 The files can be organized with or without a session label, as long as
 the organization is BIDS-compliant. Either of these is correct:
@@ -53,5 +63,5 @@ bidsdir/
 dir-PE (PhaseEncoding direction) should not be specified in the filename in case the diffusion MRI was acquired in only one PE direction. In case of multiple runs (with for example directions AP and PA) save as sub-01[_<ses-Tx>]_dir-AP_dwi.nii[.gz] and sub-01[_<ses-Tx>]_dir-PA_dwi.nii[.gz] with accompanying bvals, bvecs and json files.
 ```
 
-If you use a session label, indicate it in the `spec.json` file — see
+If your data has a session label, don't forget to indicate the session label in the `spec.json` file — see
 {doc}`spec-json`.
