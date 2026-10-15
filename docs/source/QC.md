@@ -179,13 +179,6 @@ A toggle switches between the EPI image **before** and **after** topup correctio
 
 **What to check:**
 - Geometric distortions (typically in the anterior–posterior direction) should be substantially reduced after correction.
-- The fieldmap overlay should show a smooth, anatomically plausible distortion pattern.
-- If the PE direction match is uncertain, a warning is shown and the first available PE direction is used.
-
-```{todo}
-Add example figure: EPI before and after topup correction.
-Place image at ``docs/source/_static/qc_topup_example.png`` and replace this block with a ``{figure}`` directive.
-```
 
 ---
 
@@ -194,7 +187,7 @@ Place image at ``docs/source/_static/qc_topup_example.png`` and replace this blo
 **Source:** brain extraction applied to the nodif (b0) image
 **Files:** `*_space-dwi_desc-nodif_dwi.nii.gz`, `*_space-dwi_desc-brain_mask.nii.gz`
 
-The brain mask boundary is overlaid as a red contour on the nodif image in axial, coronal, and sagittal views. Summary statistics show mask volume (voxels) and coverage percentage.
+The brain mask boundary is overlaid as a red contour on the nodif image in axial, coronal, and sagittal views.
 
 **What to check:**
 - The mask should tightly follow the brain boundary without large inclusions of non-brain tissue or missing brain regions.
@@ -209,7 +202,8 @@ The brain mask boundary is overlaid as a red contour on the nodif image in axial
 
 ### 6. T1–DWI Coregistration
 
-**Source:** registration of FreeSurfer T1w to DWI space
+**Source:** registration of FreeSurfer T1w to DWI space.
+
 **Files:** `*_space-dwi_res-FS_desc-brain_T1w.nii.gz`, nodif template, optional `*_desc-5tt-hsvs_vis.nii.gz`
 
 An interactive slider transitions between the T1w image and the nodif (b0) image in DWI space. An optional checkbox overlays the 5-tissue-type (5tt) segmentation from `5tt2vis`.
@@ -239,7 +233,7 @@ An interactive slider transitions between the T1w image and the nodif (b0) image
 
 **Source:** MRtrix3 whole-brain tractography (iFOD2)
 
-Up to 20,000 randomly sampled streamlines are rendered as RGB-coloured lines (coloured by local fibre orientation: R=left–right, G=anterior–posterior, B=superior–inferior) overlaid on a T1w MIP in axial, coronal, and sagittal views.
+Up to 20,000 randomly sampled streamlines are rendered as RGB-coloured lines (coloured by local fibre orientation: R=left–right, G=anterior–posterior, B=superior–inferior) overlaid on a T1w brain in axial, coronal, and sagittal views.
 
 **What to check:**
 - Streamlines should cover the whole brain bilaterally.

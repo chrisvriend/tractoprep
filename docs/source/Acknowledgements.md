@@ -1,6 +1,6 @@
 # Acknowledgement
 
-## credit where credit is due
+## Credit where credit is due
 
 this containerized pipeline developed for ENIGMA OCD stitches together different software packages:
 - [FSL](https://fsl.fmrib.ox.ac.uk/)
