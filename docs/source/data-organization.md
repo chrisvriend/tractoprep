@@ -13,20 +13,14 @@
   to be available.
 
 - (Optional) A **FreeSurfer output directory** (`freesurferdir`) if you
-  already have FreeSurfer output available for these participants.
-
-
-```{note}
-while existing FreeSurfer output is optional. the location of the (future)
-freesurferdir should be indicated in the {doc}`spec.json` file.
-
-```
-
+  already have FreeSurfer output available for these participants. note that you will
+  still have to specify the location of the (future) output
 
 ```{important}
 For the ENIGMA OCD project we kindly ask you to run FreeSurfer (v8.2.0) using 
 this tractoprep pipeline to prepare for future projects.
 ```
+
 
 ---
 

@@ -42,7 +42,7 @@ empty `spec.json`
 :::{tab-item} Docker
 `````bash
 docker run --rm -v /host/path/to/specjsonlocation:/spec \
-docker://cvriend/tractoprep:{{RELEASE_TAG}} \
+cvriend/tractoprep:{{RELEASE_TAG}} \
 /tracto/helpers/create_spec_template.sh > /spec/spec.json
 `````
 :::
@@ -50,13 +50,13 @@ docker://cvriend/tractoprep:{{RELEASE_TAG}} \
 :::{tab-item} Podman
 `````bash
 podman run --rm -v /host/path/to/specjsonlocation:/spec \
-docker://cvriend/tractoprep:{{RELEASE_TAG}} \
+cvriend/tractoprep:{{RELEASE_TAG}} \
 /tracto/helpers/create_spec_template.sh > /spec/spec.json
 `````
 :::
 :::{tab-item} Apptainer
 `````bash
-apptainer exec tractoprep.{{RELEASE_TAG}} /tracto/helpers/create_spec_template.sh > spec.json
+apptainer exec tractoprep.{{RELEASE_TAG}}.sif /tracto/helpers/create_spec_template.sh > spec.json
 `````
 :::
 ::::
