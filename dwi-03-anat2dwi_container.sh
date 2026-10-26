@@ -456,6 +456,24 @@ fi
  ################################################################################## 
 
 #----------------------------------------------------------------------
+#                           Visual system ROIs mapping
+#----------------------------------------------------------------------
+
+
+# if [[ -d "${freesurferdir}/${subj}" && ! -f "${freesurferdir}/${subj}/scripts/T1w-2-dwi.done" ]]; then
+
+#     if [ ! -d ${freesurferdir}/${subj}/visocd ]
+
+
+#         /tracto/visocd/map_visual_rois.sh \
+#          --subjects-dir ${freesurferdir}/${subj} \
+#          --workdir ${workdir}/${subj}${sessionpath} 
+
+#     fi
+
+
+# fi 
+#----------------------------------------------------------------------
 #                           Existing FreeSurfer run
 #----------------------------------------------------------------------
 
