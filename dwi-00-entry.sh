@@ -17,7 +17,7 @@ log() {
 
 # Parse command line arguments
 Usage() {
-    echo "Usage: dwi-preproc|dwi-tracto|dwi-qc|dwi-send|dwi-params <specfile>"
+    echo "Usage: dwi-preproc|dwi-tracto|dwi-qc|dwi-send|dwi-params|dwi-drop <specfile>"
     echo "select one of these pipelines and supply the path to the specfile (spec.json)"
     exit 1
 }
@@ -73,6 +73,9 @@ case "$pipeline" in
     ;;
     dwi-params)
         ${scriptdir}/dwi-extract_parameters.sh ${specfile}
+    ;;
+    dwi-drop)
+        ${scriptdir}/dwi-dropvols.sh ${specfile}
     ;;
     # commands not provided in usage info, but still available for internal use and in combination with SLURM arrays
     dwi-prepare)
