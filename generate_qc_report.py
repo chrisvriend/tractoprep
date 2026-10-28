@@ -1550,7 +1550,6 @@ def outlier_volumes_block(raw_dwi_path, preproc_dwi_path, outliers):
         blocks.append(f"""
         <div class="slice-block">
           <h3>Volume {scan_idx}</h3>
-          <p class="qc-desc">Flagged slice(s): {slice_list} &middot; worst mean-sq. deviation: {worst:.2f}</p>
           <img id="{view_id}-img" class="mosaic slider-img" src="{before_uri}"
                alt="volume {scan_idx} raw vs eddy-processed comparison"/>
           <div class="vtoggle-row">

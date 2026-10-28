@@ -130,25 +130,29 @@ Each point represents a slice flagged as an outlier by eddy's outlier detection.
 
 #### Outlier volume inspection
 
-For each volume containing outlier slices, a toggle allows comparison of the raw (pre-eddy) and eddy-processed volume side by side. Use this to spot volumes with residual (motion) artefacts (visible as so-called *Venetian blinds*) after preprocessing that warrant deletion using the `dwi-dropvols.py` helper script before continuing with `dwi-tracto`. 
+For each volume containing outlier slices, a toggle allows comparison of the raw (pre-eddy) and eddy-processed volume side by side. Use this to spot volumes with residual (motion) artifacts (visible as so-called *Venetian blinds*) after preprocessing that warrant deletion using the `dwi-dropvols.py` helper script before continuing with `dwi-tracto`. 
 
 
 ::::{grid} 1
 :gutter: 3
 :class-container: sd-w-75
 
-:::{grid-item-card} ✅ Correctly cleaned artefacts > no volume deletion / exclusion required.
+:::{grid-item-card} ✅ Correctly cleaned artifacts > no volume deletion / exclusion required.
 ![fixed Venetian Blinds](_static/fixed_artifact.png)
 :::
 
-:::{grid-item-card} ❌ artefact not fixed >  volume deletion / exclusion required.
+:::{grid-item-card} ❌ artifact not fixed >  volume deletion / exclusion required.
 ![remaining Venetian Blinds](_static/notfixed_artifact.png)
 :::
 
 ::::
 
+**How to delete volumes?**
+Volumes can be deleted using the dwi-dropvol module. 
+
+
 ```{note}
-If more than 10% of total volumes contains  artefacts that remain after preprocessing it is better to exclude the scan from the analyses.
+If more than 10% of total volumes contains artifacts that remain after preprocessing it is better to exclude the scan from the analyses.
 ```
 
 ---

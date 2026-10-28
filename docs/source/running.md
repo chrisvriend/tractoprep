@@ -8,7 +8,7 @@ pattern is always:
 ```
 
 where `<pipeline>` is one of: `dwi-preproc`, `dwi-tracto`, `dwi-qc`,
-`dwi-params`, `dwi-send`.
+`dwi-params`, `dwi-drop`, `dwi-send`
 
 The `spec.json` file contains the full paths to the input and output
 directories, and the settings for the pipeline — see {doc}`spec-json`.
@@ -96,13 +96,37 @@ the methods for the ENIGMA OCD paper.
 `dwi-params/<subj>[_<session>]_parameters.json`
 
 
+
+## dwi-drop
+
+In case the QC shows that there are volumes with significant artifacts that are not fixed by eddy,
+you can use the the `dwi-drop`pipeline to remove them from the image file and remove the corresponding entries
+in the bvals and bvecs file. You will need to write a spec json file containg (at least) the following information:
+
+```json
+{
+  "subj": "sub-0001",
+  "session": "", # leave empty if no session 
+  "outputdir": "/net/beegfs/derivatives",
+  "volumes": [4,32,38], # delete volumes 4, 32 and 38 (with volume 0 being the first volume of your scan)
+
+}
+```
+
+The script will prompt to check if the information is correct before starting. It will also create backups of the original files in `dwi-preproc/<subj>/[_<session>]/dwi` by adding the extension `.orig`.
+
+```{tip}
+Create a separate spec.json file for this step than for the general processing.
+
+```
+
 ## dwi-send
 
 Copies the completed derivatives and makes them ready to send to the
 project lead, along with the clinical covariates file (see {doc}`enigma-ocd`)
 
 **Outputs:**
-/derivatives/`sitename`_dwi_output.tar.bz2
+/outputdir/`sitename`_dwi_output.tar.bz2
 
 This file contains the structural connectivity matrices and an overview of the relevant scan parameters.
 The Clinical covariates file needs to be filled in separately 
@@ -111,7 +135,7 @@ The Clinical covariates file needs to be filled in separately
 ```{tip}
 Run these **in dependency order** for a fresh subject:
 `dwi-preproc` → `dwi-qc` → `dwi-tracto` → `dwi-qc` (updates previous qc html) → `dwi-send`, using `dwi-params`
-at any point if you want to check the parameters of your dataset.
+at any point if you want to check the parameters of your dataset. If necessary use `dwi-drop` before `dwi-tracto` to delete volumes with remaining artifacts.
 ```
 
 ```{note}

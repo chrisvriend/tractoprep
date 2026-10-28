@@ -45,7 +45,7 @@ apptainer run --cleanenv --bind \
 ::::
 
 
-See {doc}`installation` and {doc}`spec-json` before running this for real —
+See {doc}`installation` and {doc}`spec-json` before running —
 you need a container engine, the image, and a filled-in `spec.json`.
 
 ```{toctree}
