@@ -108,14 +108,14 @@ in the bvals and bvecs file. You will need to write a spec json file containg (a
   "subj": "sub-0001",
   "session": "",
   "outputdir": "/net/beegfs/derivatives",
-  "volumes": [4,32,38], 
+  "volumes": [4,32,38]
 
 }
 ```
 
 | Key | Meaning |
 |---|---|
-| `subj` | Subject ID of the scan to run `dwi-preproc`, `dwi-tracto` or `dwi-qc` on |
+| `subj` | Subject ID of the scan to run `dwi-drop` on |
 | `session` | Session ID, e.g. `ses-T0` — leave blank if there are no sessions |
 | `outputdir` | Path to the output directory (derivatives) |
 | `volumes` |  volumes to delete. 4, 32 and 38 in this example (with volume 0 being the first volume of your scan) |
