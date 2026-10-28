@@ -31,6 +31,23 @@
 | `atlas` | Atlas used to produce the connectivity matrix in the QC HTML report |
 | `sitename` | Name of your site/sample (only used when sending data) |
 
+
+
+```{note}
+Because the container reads *all* its locations from the `spec.json`
+file (BIDSdir, outputdir, workdir, FreeSurferdir), you must:
+
+1. Bind-mount every host directory referenced in `spec.json` into the
+   container.
+2. Make sure the **paths inside `spec.json` are the container-side
+   paths**, not the host paths — e.g. mount `/data/bids` on the host to
+   `/bids` in the container, and set `"bidsdir": "/bids"` in
+   `spec.json`, not the host path. If this is not feasible for you, you can also bind to the exact same path: e.g. /data/bids:/data/bids
+see also {doc}`running`
+
+```
+
+
 ## Generating a template
 
 A helper script, `create_spec_template.sh`, is provided to create an
