@@ -42,8 +42,7 @@ file (BIDSdir, outputdir, workdir, FreeSurferdir), you must:
 2. Make sure the **paths inside `spec.json` are the container-side
    paths**, not the host paths — e.g. mount `/data/bids` on the host to
    `/bids` in the container, and set `"bidsdir": "/bids"` in
-   `spec.json`, not the host path. If this is not feasible for you, you can also bind to the exact same path: e.g. /data/bids:/data/bids
-see also {doc}`running`
+   `spec.json`, not the host path. If this is not feasible for you, you can also bind to the exact same path: e.g. /data/bids:/data/bids. See also {doc}`running`
 
 ```
 

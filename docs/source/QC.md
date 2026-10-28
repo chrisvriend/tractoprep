@@ -130,7 +130,7 @@ Each point represents a slice flagged as an outlier by eddy's outlier detection.
 
 #### Outlier volume inspection
 
-For each volume containing outlier slices, a toggle allows comparison of the raw (pre-eddy) and eddy-processed volume side by side. Use this to spot volumes with residual (motion) artifacts (visible as so-called *Venetian blinds*) after preprocessing that warrant deletion using the `dwi-dropvols.py` helper script before continuing with `dwi-tracto`. 
+For each volume containing outlier slices, a toggle allows comparison of the raw (pre-eddy) and eddy-processed volume side by side. Use this to spot volumes with residual (motion) artifacts (visible as so-called *Venetian blinds*) after preprocessing that warrant deletion using the `dwi-drop` pipeline before continuing with `dwi-tracto`. 
 
 
 ::::{grid} 1
@@ -146,9 +146,6 @@ For each volume containing outlier slices, a toggle allows comparison of the raw
 :::
 
 ::::
-
-**How to delete volumes?**
-Volumes can be deleted using the dwi-dropvol module. 
 
 
 ```{note}
