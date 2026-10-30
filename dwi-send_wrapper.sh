@@ -33,8 +33,9 @@ if [[ -z "$jsonfile" || ! -f "$jsonfile" ]]; then
 fi
 
 # read spec.json file into variables
+# FIX: '// empty' turns JSON null/false into "" instead of the string "null"
 for key in $(jq -r 'keys[]' "${jsonfile}"); do
-  value=$(jq -r --arg k "$key" '.[$k]' "${jsonfile}")
+  value=$(jq -r --arg k "$key" '.[$k] // empty' "${jsonfile}")
   declare "$key"="$value"
 done
 
@@ -46,6 +47,17 @@ for var in outputdir sitename ; do
   fi
 done
 
+# FIX: make outputdir absolute, because the script cd's around below
+outputdir=$(realpath -m "${outputdir}")
+
+# FIX: normalise optional session: "01" -> "ses-01", unset stays empty
+session="${session:-}"
+if [[ -n "${session}" && "${session}" != ses-* ]]; then
+  session="ses-${session}"
+fi
+
+# FIX: start from a clean package so stale files from earlier runs are not shipped
+rm -rf "${outputdir}/dwi-send"
 mkdir -p "${outputdir}/dwi-send"
 
 
@@ -69,72 +81,87 @@ fi
 # connectivity matrices
 cd "${outputdir}/dwi-tracto" || { log "$RED" "Error: cannot cd to ${outputdir}/dwi-tracto"; exit 1; }
 
-# List of required files (relative to conn/, use ${subj} placeholder)
-# NOTE: single-quoted so ${subj} is NOT expanded here — it's expanded later via eval,
-# once ${subj} is actually set inside the loop.
-
-required_files=(
-    '${subj}_atlas-300P7N_desc-streams_connmatrix.csv'
-    '${subj}_atlas-300P7N_desc-FA_connmatrix.csv'
-    '${subj}_atlas-300P17N_desc-streams_connmatrix.csv'
-    '${subj}_atlas-300P17N_desc-FA_connmatrix.csv'
-    '${subj}_atlas-400P7N_desc-streams_connmatrix.csv'
-    '${subj}_atlas-400P7N_desc-FA_connmatrix.csv'
-    '${subj}_atlas-400P17N_desc-streams_connmatrix.csv'
-    '${subj}_atlas-400P17N_desc-FA_connmatrix.csv'
-    '${subj}_atlas-300P17N-Buckner_desc-streams_connmatrix.csv'
-    '${subj}_atlas-300P17N-Buckner_desc-FA_connmatrix.csv'
-    '${subj}_atlas-400P17N-Buckner_desc-streams_connmatrix.csv'
-    '${subj}_atlas-400P17N-Buckner_desc-FA_connmatrix.csv'
-    '${subj}_atlas-BNA_desc-streams_connmatrix.csv'
-    '${subj}_atlas-BNA_desc-FA_connmatrix.csv'
+# Required file suffixes. The full name is built per subject AND per session:
+#   <subj>_<suffix>              (no session)
+#   <subj>_<ses>_<suffix>        (with session)
+required_suffixes=(
+    'atlas-300P7N_desc-streams_connmatrix.csv'
+    'atlas-300P7N_desc-FA_connmatrix.csv'
+    'atlas-300P17N_desc-streams_connmatrix.csv'
+    'atlas-300P17N_desc-FA_connmatrix.csv'
+    'atlas-400P7N_desc-streams_connmatrix.csv'
+    'atlas-400P7N_desc-FA_connmatrix.csv'
+    'atlas-400P17N_desc-streams_connmatrix.csv'
+    'atlas-400P17N_desc-FA_connmatrix.csv'
+    'atlas-300P17N-Buckner_desc-streams_connmatrix.csv'
+    'atlas-300P17N-Buckner_desc-FA_connmatrix.csv'
+    'atlas-400P17N-Buckner_desc-streams_connmatrix.csv'
+    'atlas-400P17N-Buckner_desc-FA_connmatrix.csv'
+    'atlas-BNA_desc-streams_connmatrix.csv'
+    'atlas-BNA_desc-FA_connmatrix.csv'
 )
 
-# Usage: have_all_files <basepath>
-# (relies on $subj being set in the calling scope)
+# Usage: conn_filename <subj> <ses> <suffix>   (ses may be empty)
+conn_filename() {
+    echo "${1}_${2:+${2}_}${3}"
+}
+
+# Usage: have_all_files <conn_dir> <subj> <ses>
 # Returns 0 if all files exist, 1 otherwise.
-# Populates the global array `missing_files` with the names of any missing files.
+# Populates the global array `missing_files` with any missing file names.
 have_all_files() {
-    local basepath="$1"
-    local f fname
+    local conn_dir="$1" subj="$2" ses="$3" suffix fname
     missing_files=()
-    for f in "${required_files[@]}"; do
-        fname=$(eval echo "$f")
-        [ -f "${basepath}/${fname}" ] || missing_files+=("${fname}")
+    for suffix in "${required_suffixes[@]}"; do
+        fname=$(conn_filename "${subj}" "${ses}" "${suffix}")
+        [ -f "${conn_dir}/${fname}" ] || missing_files+=("${fname}")
     done
     [ ${#missing_files[@]} -eq 0 ]
 }
 
-# Tracks missing files per location so they can be reported if nothing is complete
 declare -A missing_report
+sent_subjects=()
+n_sent=0
 
 for subj in sub-*; do
     [ -d "${subj}" ] || continue
 
-    src_conn=""
-    ses=""
     missing_report=()
+    found=0
 
-    # 1) Try without session: sub-XXX/conn/
-    if have_all_files "${subj}/conn"; then
-        src_conn="${subj}/conn"
+    # Candidate sessions ("" means no session level)
+    if [[ -n "${session}" ]]; then
+        # session fixed in spec.json: only look there
+        candidates=("${session}")
     else
-        missing_report["${subj}/conn"]="${missing_files[*]}"
-
-        # 2) Try with any session: sub-XXX/ses-YYY/conn/
+        # no session in spec: try no-session layout, then every ses-* folder
+        candidates=("")
         for sesdir in "${subj}"/ses-*; do
-            [ -d "${sesdir}" ] || continue
-            if have_all_files "${sesdir}/conn"; then
-                src_conn="${sesdir}/conn"
-                ses="$(basename "${sesdir}")"
-                break
-            else
-                missing_report["${sesdir}/conn"]="${missing_files[*]}"
+            if [ -d "${sesdir}" ]; then
+                candidates+=("${sesdir##*/}")
             fi
         done
     fi
 
-    if [ -z "${src_conn}" ]; then
+    for ses in "${candidates[@]}"; do
+        src_conn="${subj}/${ses:+${ses}/}conn"
+
+        if have_all_files "${src_conn}" "${subj}" "${ses}"; then
+            # Destination preserves the session level if there is one
+            dest_conn="${outputdir}/dwi-send/${subj}/${ses:+${ses}/}conn"
+            mkdir -p "${dest_conn}"
+            for suffix in "${required_suffixes[@]}"; do
+                fname=$(conn_filename "${subj}" "${ses}" "${suffix}")
+                rsync -rltpD "${src_conn}/${fname}" "${dest_conn}/"
+            done
+            found=1
+            n_sent=$((n_sent + 1))
+        else
+            missing_report["${src_conn}"]="${missing_files[*]}"
+        fi
+    done
+
+    if [ "${found}" -eq 0 ]; then
         log "$RED" "ERROR! ${subj} does not have all required output files"
         for loc in "${!missing_report[@]}"; do
             if [ -d "${loc}" ]; then
@@ -150,31 +177,31 @@ for subj in sub-*; do
         continue
     fi
 
-    # Build destination, preserving session subdir if present
-    if [ -n "${ses}" ]; then
-        dest_conn="${outputdir}/dwi-send/${subj}/${ses}/conn"
-    else
-        dest_conn="${outputdir}/dwi-send/${subj}/conn"
-    fi
-    mkdir -p "${dest_conn}"
-
-    for f in "${required_files[@]}"; do
-        fname=$(eval echo "$f")
-        rsync -rltpD "${src_conn}/${fname}" "${dest_conn}/"
-    done
+    sent_subjects+=("${subj}")
 done
 
+# FIX: don't build an empty package
+if [ "${n_sent}" -eq 0 ]; then
+    log "$RED" "Error: no complete subject/session found, nothing to send."
+    exit 1
+fi
+log "$BLUE" "Packaged ${n_sent} subject/session(s) from ${#sent_subjects[@]} subject(s)"
 
-# qc html files
+
+# qc html files (only for subjects that were actually packaged)
 cd "${outputdir}/dwi-preproc" || { log "$RED" "Error: cannot cd to ${outputdir}/dwi-preproc"; exit 1; }
 
-for subjhtml in sub-*.html; do
-  [ -f "${subjhtml}" ] || continue   # skip if the glob matched nothing
-  rsync -rltpD "${subjhtml}" "${outputdir}/dwi-send/"
+for subj in "${sent_subjects[@]}"; do
+  for subjhtml in "${subj}_qc.html" "${subj}"_*qc.html; do
+    [ -f "${subjhtml}" ] || continue   # skip if nothing matched
+    rsync -rltpD "${subjhtml}" "${outputdir}/dwi-send/"
+  done
 done
 
 
 cd "${outputdir}" || exit 1
+# FIX: remove a stale folder, otherwise mv nests dwi-send *inside* it
+rm -rf "${sitename}_dwi_output"
 mv dwi-send "${sitename}_dwi_output"
 tar -jcvf "${sitename}_dwi_output.tar.bz2" "${sitename}_dwi_output"
 rm -r "${sitename}_dwi_output"
