@@ -123,6 +123,9 @@ declare -A missing_report
 sent_subjects=()
 n_sent=0
 
+
+log "${YELLOW}" "collecting connectivity matrices for ${sitename} from ${outputdir}/dwi-tracto"
+
 for subj in sub-*; do
     [ -d "${subj}" ] || continue
 
